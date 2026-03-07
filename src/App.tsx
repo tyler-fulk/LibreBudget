@@ -1,0 +1,55 @@
+import { Routes, Route } from 'react-router-dom'
+import { Layout } from './components/layout/Layout'
+import { Onboarding } from './components/Onboarding'
+import { useNotifications } from './hooks/useNotifications'
+import Dashboard from './pages/Dashboard'
+import AddTransaction from './pages/AddTransaction'
+import Transactions from './pages/Transactions'
+import Goals from './pages/Goals'
+import Review from './pages/Review'
+import Settings from './pages/Settings'
+import Account from './pages/Account'
+import Privacy from './pages/Privacy'
+import PrivacyManifesto from './pages/PrivacyManifesto'
+import Terms from './pages/Terms'
+import Recurring from './pages/Recurring'
+import SavingsGoals from './pages/SavingsGoals'
+import DebtTracker from './pages/DebtTracker'
+import Trends from './pages/Trends'
+import YearReview from './pages/YearReview'
+import CreditScore from './pages/CreditScore'
+
+import FinancialOrder from './pages/FinancialOrder'
+import ResetPassword from './pages/ResetPassword'
+
+export default function App() {
+  useNotifications()
+
+  return (
+    <>
+      <Onboarding />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/roadmap" element={<FinancialOrder />} />
+          <Route path="/add" element={<AddTransaction />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/recurring" element={<Recurring />} />
+          <Route path="/savings" element={<SavingsGoals />} />
+          <Route path="/debts" element={<DebtTracker />} />
+          <Route path="/trends" element={<Trends />} />
+          <Route path="/review" element={<Review />} />
+          <Route path="/year-review" element={<YearReview />} />
+          <Route path="/credit-score" element={<CreditScore />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
+          <Route path="/terms" element={<Terms />} />
+        </Route>
+      </Routes>
+    </>
+  )
+}

@@ -1,0 +1,103 @@
+import { useState } from 'react'
+import { Card } from '../ui/Card'
+import { useFinancialRiskScore } from '../../hooks/useFinancialRiskScore'
+import type { Finding, Severity } from '../../utils/financialRiskScore'
+
+const SEVERITY_STYLES: Record<Severity, string> = {
+  high: 'bg-red-500/20 text-red-400 border-red-500/40',
+  medium: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
+  low: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+}
+
+const GRADE_COLORS: Record<string, string> = {
+  Critical: 'text-red-400',
+  High: 'text-orange-400',
+  Medium: 'text-yellow-400',
+  Low: 'text-blue-400',
+  Minimal: 'text-green-400',
+}
+
+function SeverityBadge({ severity }: { severity: Severity }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 w-14 justify-center items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase border ${SEVERITY_STYLES[severity]}`}
+    >
+      {severity}
+    </span>
+  )
+}
+
+function FindingItem({ finding }: { finding: Finding }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-slate-800/50 px-3 py-2">
+      <SeverityBadge severity={finding.severity} />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-200">{finding.title}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{finding.description}</p>
+      </div>
+    </div>
+  )
+}
+
+export function FinancialHealthScore() {
+  const { score, grade, findings, loading } = useFinancialRiskScore()
+  const [expanded, setExpanded] = useState(false)
+
+  if (loading) {
+    return (
+      <Card>
+        <h3 className="text-sm font-medium text-slate-400">Financial Health Score</h3>
+        <p className="text-sm text-slate-500 py-4">Loading…</p>
+      </Card>
+    )
+  }
+
+  const gradeColor = GRADE_COLORS[grade] ?? 'text-slate-200'
+  const showExpand = findings.length > 2
+
+  return (
+    <Card>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-slate-400">Financial Health Score</h3>
+          <div className="relative group/tip">
+            <span className="inline-flex cursor-help">
+              <svg className="h-3.5 w-3.5 text-slate-500 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+            </span>
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-lg z-10 opacity-0 pointer-events-none group-hover/tip:opacity-100 group-hover/tip:pointer-events-auto transition-opacity duration-150 space-y-2">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Modeled after the Common Vulnerability Scoring System (CVSS). Client-side algorithms scan your decrypted data for single points of failure: income concentration, low emergency fund, high debt-to-income, poor credit, budget overrun, and more. Each finding is flagged as High, Medium, or Low severity.
+              </p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                <strong className="text-slate-300">Scale:</strong> 10 = no risks. High findings subtract 3, Medium 1.5, Low 0.5. Grades: Minimal (9–10), Low (7–8.9), Medium (5–6.9), High (3–4.9), Critical (0–2.9).
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-bold text-slate-100">{score.toFixed(1)}</span>
+          <span className={`text-lg font-semibold ${gradeColor}`}>{grade}</span>
+        </div>
+        {findings.length > 0 ? (
+          <div className="space-y-2">
+            {(showExpand && !expanded ? findings.slice(0, 2) : findings).map((f) => (
+              <FindingItem key={f.id} finding={f} />
+            ))}
+            {showExpand && (
+              <button
+                onClick={() => setExpanded((e) => !e)}
+                className="text-xs text-green-400 hover:text-green-300"
+              >
+                {expanded ? 'Show less' : `Show ${findings.length - 2} more`}
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500 py-2">No risk findings detected.</p>
+        )}
+      </div>
+    </Card>
+  )
+}
