@@ -92,7 +92,9 @@ VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 
 ### Production
 
-Set these in your deployment platform (Cloudflare Pages, Vercel, etc.):
+**Cloudflare Pages / Vercel / Netlify:** Set these in your deployment platform's environment variables.
+
+**cPanel (manual build):** Copy `.env.production.example` to `.env.production.local`, fill in your values, then run `npm run build`. Upload the `dist/` folder.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
