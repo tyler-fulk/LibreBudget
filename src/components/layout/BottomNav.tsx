@@ -3,7 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { Menu, X } from 'lucide-react'
 import { navItems } from './navItems'
-import { useAuth } from '../../hooks/useAuth'
 import { useCloudBackup } from '../../hooks/useCloudBackup'
 import { Icon } from '../ui/Icon'
 
@@ -15,8 +14,7 @@ export function BottomNav() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const menuRef = useRef<HTMLDivElement>(null)
-  const { user, isCloudAvailable } = useAuth()
-  const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet } = useCloudBackup()
+  const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet, enabled } = useCloudBackup()
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -68,7 +66,7 @@ export function BottomNav() {
                   <span className="truncate max-w-full">{item.label}</span>
                 </NavLink>
               ))}
-              {isCloudAvailable && user && (
+              {enabled && (
                 <button
                   onClick={() => backupNow()}
                   disabled={isBacking || backupCooldown > 0 || !passphraseSet}

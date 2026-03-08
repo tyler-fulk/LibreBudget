@@ -10,7 +10,7 @@ import { useShowEncryptionIndicators } from '../hooks/useShowEncryptionIndicator
 import { db, ALL_GROUPS, type CategoryGroup } from '../db/database'
 import { serializeDatabase, hydrateDatabase, type BackupPayload } from '../db/backup'
 import { GROUP_COLORS, GROUP_LABELS, getCategoryIconClassName } from '../utils/colors'
-import { useAuth } from '../hooks/useAuth'
+import { useWallet } from '../hooks/useWallet'
 import { useCloudBackup } from '../hooks/useCloudBackup'
 import { exportTransactionsCSV, downloadCSV, exportTransactionsPDF } from '../utils/csvExport'
 import { parseCSV, importCSVTransactions } from '../utils/csvImport'
@@ -43,8 +43,9 @@ export default function Settings() {
   const [permissionState, setPermissionState] = useState(
     getNotificationPermission(),
   )
-  const { user, isCloudAvailable } = useAuth()
+  const { hasWallet } = useWallet()
   const { lastBackupAt, isBacking, enabled: backupEnabled } = useCloudBackup()
+  const isCloudConfigured = !!import.meta.env.VITE_BACKUP_API_URL
   const [showCatModal, setShowCatModal] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [newCatGroup, setNewCatGroup] = useState<CategoryGroup>('needs')
@@ -195,13 +196,13 @@ export default function Settings() {
       </div>
 
       {/* Cloud Backup status */}
-      {isCloudAvailable && (
+      {isCloudConfigured && (
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
                 className={`h-3 w-3 rounded-full ${
-                  backupEnabled && user
+                  backupEnabled
                     ? isBacking
                       ? 'bg-yellow-500 animate-pulse'
                       : 'bg-green-500'
@@ -213,8 +214,8 @@ export default function Settings() {
                   Cloud Backup
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {!user
-                    ? 'Sign in to enable'
+                  {!hasWallet
+                    ? 'Create or restore vault to enable'
                     : isBacking
                       ? 'Syncing...'
                       : lastBackupAt
@@ -227,7 +228,7 @@ export default function Settings() {
               href="/account"
               className="text-xs font-medium text-green-400 hover:text-green-300"
             >
-              {user ? 'Manage' : 'Set up'}
+              {hasWallet ? 'Manage' : 'Set up'}
             </a>
           </div>
         </Card>

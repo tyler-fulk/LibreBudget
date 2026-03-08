@@ -3,7 +3,7 @@ import { Card } from '../components/ui/Card'
 
 export default function Privacy() {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Privacy Policy</h1>
         <p className="text-sm text-slate-400 mt-1">
@@ -12,144 +12,142 @@ export default function Privacy() {
       </div>
 
       <Card>
-        <div className="prose prose-invert prose-sm max-w-none space-y-6 text-slate-300 [&_h2]:text-slate-100 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-slate-200 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-1 [&_strong]:text-slate-200 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1">
+        <div className="prose prose-invert prose-sm max-w-none space-y-6 text-slate-300 [&_a]:text-green-400 [&_a:hover]:text-green-300 [&_h2]:text-slate-100 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-slate-200 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-1 [&_strong]:text-slate-200 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_p]:leading-relaxed">
 
-          <p>
-            LibreBudget ("we", "us", "our", or "the Application") is a free,
+          <p className="text-slate-200">
+            LibreBudget (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;, or &quot;the Application&quot;) is a free,
             open-source personal budget tracking application. We are committed
             to protecting your privacy. This Privacy Policy explains how your
             information is collected, used, and disclosed when you use
             LibreBudget.
           </p>
 
-          <h2>1. Local-First Architecture</h2>
+          <h2>1. Zero-Knowledge Architecture</h2>
           <p>
-            LibreBudget is designed as a <strong>local-first</strong> application.
-            By default, all of your financial data -- including transactions,
-            categories, budget goals, and settings -- is stored exclusively in
-            your web browser's IndexedDB storage on your own device. <strong>No
-            data is transmitted to any server unless you explicitly opt in to
-            cloud backup by creating an account.</strong>
+            LibreBudget uses a <strong>zero-knowledge</strong> design. We cannot
+            see, access, or recover your financial data — even when you use
+            optional cloud backup. Your data is encrypted in your browser with
+            keys derived from your 24-word recovery phrase (BIP39 mnemonic)
+            before it is ever sent. We store only ciphertext; we never store
+            your recovery phrase, encryption keys, or any plaintext. Only you
+            hold the keys.
           </p>
 
-          <h2>2. Data We Collect</h2>
-
-          <h3>2.1 Data Stored Locally (No Account)</h3>
+          <h2>2. Local-First by Default</h2>
           <p>
-            When you use LibreBudget without an account, we collect and store
+            By default, all of your data — transactions, categories, budget
+            goals, debts, savings goals, credit scores, recurring transactions,
+            and settings — is stored in your browser&apos;s IndexedDB on your
+            device. <strong>No data is sent to any server unless you
+            explicitly create a vault and enable cloud backup.</strong> The
+            app works fully offline without any account or vault.
+          </p>
+
+          <h2>3. Data We Collect</h2>
+
+          <h3>3.1 Without a Vault</h3>
+          <p>
+            When you use LibreBudget without creating a vault, we collect
             <strong> no data whatsoever</strong> on any server. All information
-            you enter remains on your device in your browser's local storage.
-            We have no access to it.
+            remains in your browser. We have no access to it.
           </p>
 
-          <h3>2.2 Data Collected With an Account (Optional Cloud Backup)</h3>
-          <p>If you choose to create an account, we collect:</p>
+          <h3>3.2 With a Vault (Optional Cloud Backup)</h3>
+          <p>If you create a vault and use cloud backup, the backend stores:</p>
           <ul>
             <li>
-              <strong>Email address</strong> -- used solely for authentication
-              (sign-in, password reset). We do not send marketing emails.
+              <strong>Anonymous storage ID</strong> — a 64-character hex string
+              derived from your recovery phrase. It identifies your backup slot
+              but does not identify you personally. The phrase itself is never
+              sent or stored.
             </li>
             <li>
-              <strong>Hashed password</strong> -- your password is hashed using
-              bcrypt by our authentication provider (Supabase) before storage.
-              We never store or have access to your plaintext password.
-            </li>
-            <li>
-              <strong>Backup data</strong> -- if you enable cloud backup, a
-              serialized copy of your local database (transactions, categories,
-              goals, settings) is stored on our cloud infrastructure so you can
-              restore it on another device.
+              <strong>Encrypted backup payload</strong> — your data is encrypted
+              in your browser with AES-256-GCM before upload. The backend
+              receives and stores only ciphertext. We cannot decrypt it; only
+              you can, with your recovery phrase.
             </li>
           </ul>
 
-          <h3>2.3 Data We Do NOT Collect</h3>
+          <h3>3.3 Data We Do NOT Collect</h3>
           <ul>
-            <li>We do not use analytics, tracking pixels, or cookies for advertising.</li>
-            <li>We do not collect your IP address for profiling purposes.</li>
-            <li>We do not collect device fingerprints.</li>
-            <li>We do not use any third-party advertising services.</li>
-            <li>We do not sell, rent, or trade any user data to third parties.</li>
+            <li>No analytics, tracking pixels, or advertising cookies.</li>
+            <li>No email, password, or personal identifiers.</li>
+            <li>No IP address for profiling.</li>
+            <li>No device fingerprints.</li>
+            <li>No selling, renting, or trading of user data.</li>
+            <li>No access to your recovery phrase or encryption keys.</li>
           </ul>
 
-          <h2>3. Third-Party Services</h2>
+          <h2>4. Third-Party Services</h2>
           <p>
-            If you opt in to cloud backup, the Application uses
-            <strong> Supabase</strong> (supabase.com) as its backend
-            infrastructure provider for authentication and data storage.
-            Supabase processes your data in accordance with their own privacy
-            policy. Your backup data is stored in a PostgreSQL database
-            protected by Row Level Security, meaning only you can access your
-            own data through authenticated API calls.
+            Optional cloud backup uses <strong>Cloudflare Workers and KV</strong>
+            as a storage backend. The Worker is a &quot;dumb pipe&quot;: it accepts
+            an anonymous ID and encrypted payload, stores them, and returns the
+            payload on request. It has no decryption capability and never sees
+            your recovery phrase, keys, or plaintext data. All encryption and
+            key derivation happens in your browser.
           </p>
 
-          <h2>4. Data Security</h2>
+          <h2>5. Data Security</h2>
           <ul>
-            <li>All data transmitted between your browser and cloud services is encrypted via <strong>TLS/HTTPS</strong>.</li>
-            <li>Passwords are hashed with <strong>bcrypt</strong> and are never stored in plaintext.</li>
-            <li>Optional <strong>two-factor authentication (TOTP)</strong> is available for additional account security.</li>
-            <li>Cloud data is protected by <strong>Row Level Security</strong> at the database level -- each user can only access their own backup.</li>
-            <li>The application's source code is open-source and available for public audit.</li>
+            <li><strong>Encryption</strong> — AES-256-GCM with keys from BIP39 + HKDF. Plaintext never leaves your device.</li>
+            <li><strong>TLS/HTTPS</strong> — All transmission is encrypted.</li>
+            <li><strong>Recovery phrase</strong> — Never transmitted. Stored only in your memory or where you choose to back it up. Lose it, and we cannot recover encrypted backups (by design).</li>
+            <li><strong>Open source</strong> — Source code is available for audit.</li>
           </ul>
 
-          <h2>5. Data Retention and Deletion</h2>
+          <h2>6. Data Retention and Deletion</h2>
           <ul>
             <li>
-              <strong>Local data:</strong> You can delete all local data at any
-              time from the Settings page, or by clearing your browser's site
-              data. We have no ability to access or recover locally-stored data.
+              <strong>Local data:</strong> Delete anytime by locking your vault
+              or clearing browser site data. We cannot access it.
             </li>
             <li>
-              <strong>Cloud data:</strong> You can delete your cloud backup at
-              any time. If you delete your account, all associated backup data
-              is permanently deleted from our servers.
-            </li>
-            <li>
-              We do not retain any user data after account deletion.
+              <strong>Cloud backup:</strong> Delete your cloud backup anytime
+              from Account. Encrypted data is permanently removed. We retain
+              nothing.
             </li>
           </ul>
 
-          <h2>6. Your Rights</h2>
+          <h2>7. Your Rights</h2>
           <p>You have the right to:</p>
           <ul>
-            <li><strong>Access</strong> all data stored about you (via the export feature in Settings).</li>
-            <li><strong>Delete</strong> all your data at any time (local and/or cloud).</li>
-            <li><strong>Portability</strong> -- export your data as a JSON file from Settings.</li>
-            <li><strong>Withdraw consent</strong> -- stop using cloud backup at any time by signing out; your data remains local.</li>
-            <li><strong>Use the app without an account</strong> -- cloud features are entirely optional.</li>
+            <li><strong>Access</strong> all your data (export JSON/CSV from Settings).</li>
+            <li><strong>Delete</strong> local and cloud data at any time.</li>
+            <li><strong>Portability</strong> — export and take your data elsewhere.</li>
+            <li><strong>Use without cloud</strong> — the app is fully useful offline.</li>
+            <li><strong>Verify</strong> — audit the open-source code.</li>
           </ul>
 
-          <h2>7. Children's Privacy</h2>
+          <h2>8. Children&apos;s Privacy</h2>
           <p>
-            LibreBudget is not directed at children under the age of 13. We do
-            not knowingly collect personal information from children under 13.
-            If we learn that we have collected data from a child under 13, we
-            will delete that information promptly.
+            LibreBudget is not directed at children under 13. We do not
+            knowingly collect personal information from children under 13.
           </p>
 
-          <h2>8. Changes to This Policy</h2>
+          <h2>9. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. Changes will be
-            reflected on this page with an updated "Last updated" date. Your
-            continued use of the Application after changes constitutes
-            acceptance of the updated policy.
+            posted on this page with an updated &quot;Last updated&quot; date. Continued
+            use after changes constitutes acceptance.
           </p>
 
-          <h2>9. Contact</h2>
+          <h2>10. Contact</h2>
           <p>
-            If you have questions or concerns about this Privacy Policy or your
-            data, please open an issue on the project's open-source repository
-            or contact the project maintainer.
+            Questions? Open an issue on the project&apos;s repository or contact the
+            maintainer.
           </p>
 
         </div>
       </Card>
 
       <p className="text-center text-xs text-slate-500">
-        <Link to="/privacy-manifesto" className="hover:text-slate-300">Privacy & Security Manifesto</Link>
+        <Link to="/privacy-manifesto" className="text-green-400 hover:text-green-300">Privacy & Security Manifesto</Link>
         {' · '}
-        <Link to="/terms" className="hover:text-slate-300">Terms of Use</Link>
+        <Link to="/terms" className="text-green-400 hover:text-green-300">Terms of Use</Link>
         {' · '}
-        <Link to="/settings" className="hover:text-slate-300">Back to Settings</Link>
+        <Link to="/settings" className="text-green-400 hover:text-green-300">Back to Settings</Link>
       </p>
     </div>
   )

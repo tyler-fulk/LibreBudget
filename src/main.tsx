@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
-import { AuthProvider } from './hooks/useAuth'
+import { WalletProvider } from './hooks/useWallet'
 import { ThemeProvider } from './hooks/useTheme'
 import { EncryptionIndicatorsProvider } from './hooks/useShowEncryptionIndicators'
 import { ToastProvider } from './components/ui/Toast'
@@ -15,13 +15,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
+        <WalletProvider>
           <EncryptionIndicatorsProvider>
             <ToastProvider>
               <App />
             </ToastProvider>
           </EncryptionIndicatorsProvider>
-        </AuthProvider>
+        </WalletProvider>
       </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,

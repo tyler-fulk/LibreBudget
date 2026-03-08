@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { navItems } from './navItems'
-import { useAuth } from '../../hooks/useAuth'
 import { useCloudBackup } from '../../hooks/useCloudBackup'
 import { Icon } from '../ui/Icon'
 
 export function Sidebar() {
-  const { user, isCloudAvailable } = useAuth()
-  const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet } = useCloudBackup()
+  const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet, enabled } = useCloudBackup()
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -45,12 +43,12 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="shrink-0 border-t border-slate-800 p-4 space-y-2">
-        {isCloudAvailable && user && (
+        {enabled && (
           <div className="space-y-1">
             <button
               onClick={() => backupNow()}
               disabled={isBacking || backupCooldown > 0 || !passphraseSet}
-              title={!passphraseSet ? 'Set an encryption passphrase in Account first' : undefined}
+              title={!passphraseSet ? 'Create or restore vault in Account first' : undefined}
               className="w-full rounded-lg bg-slate-800 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isBacking
@@ -70,24 +68,18 @@ export function Sidebar() {
             </p>
           </div>
         )}
-        {isCloudAvailable && (
+        {enabled && (
           <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 rounded-full ${
-                user ? 'bg-green-500' : 'bg-slate-600'
-              }`}
-            />
-            <p className="truncate text-xs text-slate-500">
-              {user ? user.email : 'Not signed in'}
-            </p>
+            <div className="h-2 w-2 rounded-full bg-green-500" />
+            <p className="truncate text-xs text-slate-500">Vault active</p>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0 text-xs text-slate-600">
-          <NavLink to="/privacy" className="hover:text-slate-400">Privacy</NavLink>
+          <NavLink to="/privacy" className="text-slate-500 hover:text-green-400">Privacy</NavLink>
           <span>·</span>
-          <NavLink to="/privacy-manifesto" className="hover:text-slate-400">Manifesto</NavLink>
+          <NavLink to="/privacy-manifesto" className="text-slate-500 hover:text-green-400">Manifesto</NavLink>
           <span>·</span>
-          <NavLink to="/terms" className="hover:text-slate-400">Terms</NavLink>
+          <NavLink to="/terms" className="text-slate-500 hover:text-green-400">Terms</NavLink>
         </div>
         <p className="text-xs text-slate-500">LibreBudget v1.0</p>
       </div>

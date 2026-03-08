@@ -9,6 +9,8 @@ import Goals from './pages/Goals'
 import Review from './pages/Review'
 import Settings from './pages/Settings'
 import Account from './pages/Account'
+import GenerateWallet from './pages/GenerateWallet'
+import RestoreWallet from './pages/RestoreWallet'
 import Privacy from './pages/Privacy'
 import PrivacyManifesto from './pages/PrivacyManifesto'
 import Terms from './pages/Terms'
@@ -20,7 +22,6 @@ import YearReview from './pages/YearReview'
 import CreditScore from './pages/CreditScore'
 
 import FinancialOrder from './pages/FinancialOrder'
-import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   useNotifications()
@@ -44,7 +45,8 @@ export default function App() {
           <Route path="/credit-score" element={<CreditScore />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/account" element={<Account />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/generate-wallet" element={<GenerateWallet />} />
+          <Route path="/restore-wallet" element={<RestoreWallet />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
           <Route path="/terms" element={<Terms />} />

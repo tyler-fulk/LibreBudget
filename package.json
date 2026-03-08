@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:worker": "cd cloudflare-worker && npm install && npm run deploy"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.4.2",
-    "@supabase/supabase-js": "^2.98.0",
+    "@scure/bip39": "^1.4.0",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",

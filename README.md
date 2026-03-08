@@ -16,6 +16,7 @@ Free, open-source budget tracker that runs entirely in your browser. All data is
 - **Monthly Review** — Month-over-month comparison with improvement highlights
 - **Daily Reminders** — Browser notifications to log expenses
 - **Data Export/Import** — JSON and CSV backup, PDF reports
+- **Zero-Knowledge Cloud Backup** — Optional encrypted backup via wallet (BIP39 + Cloudflare KV)
 - **PWA** — Installable as a standalone app, works offline
 
 ## Tech Stack
@@ -25,6 +26,7 @@ Free, open-source budget tracker that runs entirely in your browser. All data is
 - Tailwind CSS v4
 - Dexie.js (IndexedDB)
 - Recharts
+- bip39 (wallet/recovery phrase)
 - vite-plugin-pwa
 
 ## Getting Started
@@ -42,6 +44,22 @@ Open http://localhost:5173 in your browser.
 npm run build
 npm run preview
 ```
+
+## Cloud Backup (Optional)
+
+Cloud backup uses a wallet-style flow: create or restore a 24-word recovery phrase, then sync encrypted data to a Cloudflare Worker.
+
+1. Deploy the backup worker:
+   ```bash
+   cd cloudflare-worker && npm install && npm run deploy
+   ```
+2. Copy the Worker URL and add to `.env.local`:
+   ```
+   VITE_BACKUP_API_URL=https://your-worker.workers.dev
+   ```
+3. In the app: Account → Create Wallet or Restore from recovery phrase.
+
+Backup is rate-limited (visibility change + 30s debounce) to respect Cloudflare KV free tier (1k writes/day).
 
 ## License
 

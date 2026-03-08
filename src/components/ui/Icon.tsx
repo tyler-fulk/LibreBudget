@@ -50,6 +50,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
+  Copy,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -106,6 +107,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
+  Copy,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */
