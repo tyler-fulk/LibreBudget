@@ -4,7 +4,9 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
+import { PinSetupModal } from '../components/PinSetupModal'
 import { useWallet } from '../hooks/useWallet'
+import type { WalletKeys } from '../hooks/useWallet'
 import { generateWallet, deriveKeys, encryptBackup } from '../utils/crypto'
 import { serializeDatabase } from '../db/backup'
 
@@ -18,13 +20,15 @@ const TURNSTILE_REQUIRED = import.meta.env.PROD && !!BACKUP_API_URL
 
 export default function GenerateWallet() {
   const navigate = useNavigate()
-  const { setWallet } = useWallet()
+  const { setWallet, persistWithPin } = useWallet()
   const [mnemonic] = useState<string>(() => generateWallet())
   const [confirmed, setConfirmed] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [keysForPin, setKeysForPin] = useState<WalletKeys | null>(null)
 
   const handleCopy = useCallback(async () => {
     try {
@@ -59,8 +63,10 @@ export default function GenerateWallet() {
           throw new Error(body.hint ? `${msg}. ${body.hint}` : msg)
         }
       }
-      setWallet({ anonymousId, encryptionKey })
-      navigate('/', { replace: true })
+      const keys = { anonymousId, encryptionKey }
+      setWallet(keys)
+      setKeysForPin(keys)
+      setShowPinModal(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create vault'
       setError(msg === 'Failed to fetch'
@@ -69,7 +75,7 @@ export default function GenerateWallet() {
     } finally {
       setLoading(false)
     }
-  }, [mnemonic, confirmed, turnstileToken, setWallet, navigate])
+  }, [mnemonic, confirmed, turnstileToken, setWallet])
 
   const words = mnemonic.split(' ')
 
@@ -193,9 +199,25 @@ export default function GenerateWallet() {
           </Button>
 
           <p className="text-xs text-slate-500 text-center">
-            Your keys stay in memory only. Refreshing the page will lock your
-            vault — use Restore to recover.
+            Set a PIN after creating to stay signed in on this device.
           </p>
+
+          <PinSetupModal
+            open={showPinModal}
+            onSetPin={async (pin) => {
+              if (keysForPin) {
+                await persistWithPin(keysForPin, pin)
+                setShowPinModal(false)
+                setKeysForPin(null)
+                navigate('/', { replace: true })
+              }
+            }}
+            onSkip={() => {
+              setShowPinModal(false)
+              setKeysForPin(null)
+              navigate('/', { replace: true })
+            }}
+          />
 
           <p className="text-center">
             <Link to="/account" className="text-sm text-slate-500 hover:text-slate-300">

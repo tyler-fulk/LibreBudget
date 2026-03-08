@@ -6,7 +6,9 @@ import { wordlist } from '@scure/bip39/wordlists/english'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
+import { PinSetupModal } from '../components/PinSetupModal'
 import { useWallet } from '../hooks/useWallet'
+import type { WalletKeys } from '../hooks/useWallet'
 import { deriveKeys, decryptBackup } from '../utils/crypto'
 import { hydrateDatabase, validateBackupPayload, type BackupPayload } from '../db/backup'
 
@@ -20,11 +22,13 @@ const TURNSTILE_REQUIRED = import.meta.env.PROD && !!BACKUP_API_URL
 
 export default function RestoreWallet() {
   const navigate = useNavigate()
-  const { setWallet } = useWallet()
+  const { setWallet, persistWithPin } = useWallet()
   const [mnemonicInput, setMnemonicInput] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [keysForPin, setKeysForPin] = useState<WalletKeys | null>(null)
 
   const handleRestore = useCallback(async () => {
     const normalized = mnemonicInput.trim().replace(/\s+/g, ' ')
@@ -36,7 +40,8 @@ export default function RestoreWallet() {
     setLoading(true)
     try {
       const { anonymousId, encryptionKey } = await deriveKeys(normalized)
-      setWallet({ anonymousId, encryptionKey })
+      const keys = { anonymousId, encryptionKey }
+      setWallet(keys)
 
       if (BACKUP_API_URL) {
         const headers: HeadersInit = {}
@@ -47,7 +52,7 @@ export default function RestoreWallet() {
         if (res.ok) {
           const payloadBase64 = await res.text()
           if (payloadBase64) {
-            const decrypted = await decryptBackup(payloadBase64, encryptionKey)
+            const decrypted = await decryptBackup(payloadBase64, keys.encryptionKey)
             const payload = JSON.parse(decrypted) as BackupPayload
             const validation = validateBackupPayload(payload)
             if (validation.valid) {
@@ -67,7 +72,8 @@ export default function RestoreWallet() {
         }
       }
 
-      navigate('/', { replace: true })
+      setKeysForPin(keys)
+      setShowPinModal(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Restore failed'
       setError(msg === 'Failed to fetch'
@@ -76,7 +82,7 @@ export default function RestoreWallet() {
     } finally {
       setLoading(false)
     }
-  }, [mnemonicInput, turnstileToken, setWallet, navigate])
+  }, [mnemonicInput, turnstileToken, setWallet])
 
   const normalized = mnemonicInput.trim().replace(/\s+/g, ' ')
   const wordCount = normalized ? normalized.split(' ').length : 0
@@ -160,6 +166,23 @@ export default function RestoreWallet() {
           >
             {loading ? 'Restoring...' : 'Restore Vault'}
           </Button>
+
+          <PinSetupModal
+            open={showPinModal}
+            onSetPin={async (pin) => {
+              if (keysForPin) {
+                await persistWithPin(keysForPin, pin)
+                setShowPinModal(false)
+                setKeysForPin(null)
+                navigate('/', { replace: true })
+              }
+            }}
+            onSkip={() => {
+              setShowPinModal(false)
+              setKeysForPin(null)
+              navigate('/', { replace: true })
+            }}
+          />
 
           {!BACKUP_API_URL && (
             <p className="text-xs text-amber-400 text-center">
