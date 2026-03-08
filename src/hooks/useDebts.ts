@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Debt } from '../db/database'
+import { sanitizeString, sanitizeAmount } from '../utils/sanitize'
 
 export interface PayoffScheduleEntry {
   month: number
@@ -67,16 +68,36 @@ export function useDebts() {
   const debts = useLiveQuery(() => db.debts.toArray()) ?? []
 
   const addDebt = async (debt: Omit<Debt, 'id' | 'createdAt'>) => {
-    const withOriginal = { ...debt, originalBalance: debt.balance, createdAt: new Date().toISOString() }
-    return db.debts.add(withOriginal)
+    return db.debts.add({
+      ...debt,
+      name: sanitizeString(debt.name, 100),
+      icon: sanitizeString(debt.icon ?? '', 20),
+      balance: sanitizeAmount(debt.balance),
+      interestRate: sanitizeAmount(debt.interestRate),
+      minimumPayment: sanitizeAmount(debt.minimumPayment),
+      notes: debt.notes != null ? sanitizeString(debt.notes) : undefined,
+      annualFee: debt.annualFee != null ? sanitizeAmount(debt.annualFee) : undefined,
+      originalBalance: sanitizeAmount(debt.balance),
+      targetMonthlyPayment: debt.targetMonthlyPayment != null ? sanitizeAmount(debt.targetMonthlyPayment) : undefined,
+      createdAt: new Date().toISOString(),
+    })
   }
 
   const updateDebt = async (id: number, changes: Partial<Debt>) => {
     const existing = await db.debts.get(id)
+    let sanitized: Partial<Debt> = { ...changes }
     if (existing && changes.balance != null && changes.balance > (existing.originalBalance ?? existing.balance)) {
-      changes = { ...changes, originalBalance: changes.balance }
+      sanitized = { ...sanitized, originalBalance: changes.balance }
     }
-    return db.debts.update(id, changes)
+    if (changes.name !== undefined) sanitized.name = sanitizeString(changes.name, 100)
+    if (changes.icon !== undefined) sanitized.icon = sanitizeString(changes.icon, 20)
+    if (changes.notes !== undefined) sanitized.notes = sanitizeString(changes.notes)
+    if (changes.balance !== undefined) sanitized.balance = sanitizeAmount(changes.balance)
+    if (changes.interestRate !== undefined) sanitized.interestRate = sanitizeAmount(changes.interestRate)
+    if (changes.minimumPayment !== undefined) sanitized.minimumPayment = sanitizeAmount(changes.minimumPayment)
+    if (changes.targetMonthlyPayment !== undefined) sanitized.targetMonthlyPayment = sanitizeAmount(changes.targetMonthlyPayment)
+    if (changes.annualFee !== undefined) sanitized.annualFee = changes.annualFee != null ? sanitizeAmount(changes.annualFee) : undefined
+    return db.debts.update(id, sanitized)
   }
 
   const deleteDebt = async (id: number) => {

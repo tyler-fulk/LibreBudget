@@ -16,7 +16,7 @@ interface TrendMonth {
   net: number
   needs: number
   wants: number
-  investments: number
+  savings: number
 }
 
 export default function Trends() {
@@ -52,7 +52,7 @@ export default function Trends() {
         net: income - expenses,
         needs: breakdown.needs,
         wants: breakdown.wants,
-        investments: breakdown.investments,
+        savings: breakdown.savings,
       })
     }
 
@@ -168,7 +168,7 @@ export default function Trends() {
               <Legend />
               {EXPENSE_GROUPS.map((g) => (
                 <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} name={GROUP_LABELS[g]}
-                  radius={g === 'investments' ? [4, 4, 0, 0] : undefined} />
+                  radius={g === 'savings' ? [4, 4, 0, 0] : undefined} />
               ))}
             </BarChart>
           </ResponsiveContainer>

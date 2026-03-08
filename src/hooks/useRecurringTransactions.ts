@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback, useEffect } from 'react'
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 import { db, type RecurringTransaction, type RecurrenceInterval } from '../db/database'
+import { sanitizeString, sanitizeAmount } from '../utils/sanitize'
 
 function advanceDate(date: string, interval: RecurrenceInterval): string {
   const d = new Date(date)
@@ -18,11 +19,21 @@ export function useRecurringTransactions() {
   const recurring = useLiveQuery(() => db.recurringTransactions.toArray()) ?? []
 
   const addRecurring = async (r: Omit<RecurringTransaction, 'id' | 'createdAt'>) => {
-    return db.recurringTransactions.add({ ...r, createdAt: new Date().toISOString() })
+    return db.recurringTransactions.add({
+      ...r,
+      description: sanitizeString(r.description ?? ''),
+      note: sanitizeString(r.note ?? ''),
+      amount: sanitizeAmount(r.amount),
+      createdAt: new Date().toISOString(),
+    })
   }
 
   const updateRecurring = async (id: number, changes: Partial<RecurringTransaction>) => {
-    return db.recurringTransactions.update(id, changes)
+    const sanitized: Partial<RecurringTransaction> = { ...changes }
+    if (changes.description !== undefined) sanitized.description = sanitizeString(changes.description)
+    if (changes.note !== undefined) sanitized.note = sanitizeString(changes.note)
+    if (changes.amount !== undefined) sanitized.amount = sanitizeAmount(changes.amount)
+    return db.recurringTransactions.update(id, sanitized)
   }
 
   const deleteRecurring = async (id: number) => {

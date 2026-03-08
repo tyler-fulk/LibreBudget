@@ -23,10 +23,25 @@ const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/sit
 /** Test bypass: when secret is this value, accept any non-empty token (vitest only). */
 const TURNSTILE_TEST_BYPASS_SECRET = 'test-bypass-secret';
 
-async function verifyTurnstile(token: string | null, secret: string): Promise<boolean> {
+async function verifyTurnstile(
+	token: string | null,
+	secret: string,
+	origin: string | null,
+): Promise<boolean> {
 	if (!token || !secret) return false;
-	// Test bypass for vitest (no browser to generate real Turnstile token)
-	if (secret === TURNSTILE_TEST_BYPASS_SECRET && token.length > 0) return true;
+	if (secret === TURNSTILE_TEST_BYPASS_SECRET) {
+		if (token.length === 0) return false;
+		// Only allow bypass for localhost (local dev / tests)
+		if (origin) {
+			try {
+				const url = new URL(origin);
+				if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+			} catch {
+				/* invalid origin */
+			}
+		}
+		return false;
+	}
 	try {
 		const res = await fetch(TURNSTILE_VERIFY_URL, {
 			method: 'POST',
@@ -54,7 +69,7 @@ function isOriginAllowed(origin: string | null, env: Env): boolean {
 
 function corsHeaders(origin: string | null, env: Env): HeadersInit {
 	const origins = getAllowedOrigins(env);
-	const allowed = isOriginAllowed(origin, env) ? origin : origins[0];
+	const allowed: string = (origin && isOriginAllowed(origin, env) ? origin : origins[0]) ?? origins[0]!;
 	return {
 		'Access-Control-Allow-Origin': allowed,
 		'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -135,7 +150,7 @@ export default {
 		// POST /backup/init — first backup only, requires Turnstile
 		if (request.method === 'POST' && url.pathname === '/backup/init') {
 			const token = request.headers.get('X-Turnstile-Token');
-			const valid = await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY);
+			const valid = await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY, origin);
 			if (!valid) {
 				return jsonResponse(
 					{ error: 'Turnstile verification failed', hint: 'Token may have expired. Complete the challenge again.' },
@@ -186,7 +201,7 @@ export default {
 		// GET /backup/:id — restore, requires Turnstile
 		if (request.method === 'GET' && id) {
 			const token = request.headers.get('X-Turnstile-Token');
-			const valid = await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY);
+			const valid = await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY, origin);
 			if (!valid) {
 				return jsonResponse(
 					{ error: 'Turnstile verification failed', hint: 'Token may have expired. Complete the challenge again.' },

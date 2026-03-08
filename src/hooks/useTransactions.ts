@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Transaction } from '../db/database'
+import { sanitizeString, sanitizeAmount } from '../utils/sanitize'
 
 export function useTransactions(startDate?: string, endDate?: string) {
   const transactions = useLiveQuery(() => {
@@ -16,13 +17,19 @@ export function useTransactions(startDate?: string, endDate?: string) {
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
     return db.transactions.add({
       ...transaction,
-      note: transaction.note ?? '',
+      description: sanitizeString(transaction.description ?? ''),
+      note: sanitizeString(transaction.note ?? ''),
+      amount: sanitizeAmount(transaction.amount),
       createdAt: new Date().toISOString(),
     })
   }
 
   const updateTransaction = async (id: number, changes: Partial<Transaction>) => {
-    return db.transactions.update(id, changes)
+    const sanitized: Partial<Transaction> = { ...changes }
+    if (changes.description !== undefined) sanitized.description = sanitizeString(changes.description)
+    if (changes.note !== undefined) sanitized.note = sanitizeString(changes.note)
+    if (changes.amount !== undefined) sanitized.amount = sanitizeAmount(changes.amount)
+    return db.transactions.update(id, sanitized)
   }
 
   const deleteTransaction = async (id: number) => {

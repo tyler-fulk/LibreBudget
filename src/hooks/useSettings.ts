@@ -25,6 +25,14 @@ export function useSettings() {
 
   const monthlyBudget = parseFloat(settings['monthlyBudget'] ?? '3000')
 
+  /** Returns the budget for a specific month (YYYY-MM), falling back to the global default. */
+  const getMonthlyBudget = (month: string): number =>
+    parseFloat(settings[`monthlyBudget-${month}`] ?? settings['monthlyBudget'] ?? '3000')
+
+  /** Persists a budget for a specific month without touching the global default. */
+  const setMonthlyBudget = (month: string, amount: number) =>
+    setSetting(`monthlyBudget-${month}`, amount.toString())
+
   const notificationsEnabled = settings['notificationsEnabled'] !== 'false'
 
   return {
@@ -33,6 +41,8 @@ export function useSettings() {
     setSetting,
     trackingPeriod,
     monthlyBudget,
+    getMonthlyBudget,
+    setMonthlyBudget,
     notificationsEnabled,
   }
 }

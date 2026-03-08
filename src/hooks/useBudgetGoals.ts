@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type BudgetGoal } from '../db/database'
 import { getCurrentMonth } from '../utils/calculations'
+import { sanitizeAmount } from '../utils/sanitize'
 
 export function useBudgetGoals(month?: string) {
   const targetMonth = month ?? getCurrentMonth()
@@ -22,9 +23,9 @@ export function useBudgetGoals(month?: string) {
       .first()
 
     if (existing?.id) {
-      return db.budgetGoals.update(existing.id, { monthlyLimit: goal.monthlyLimit })
+      return db.budgetGoals.update(existing.id, { monthlyLimit: sanitizeAmount(goal.monthlyLimit) })
     }
-    return db.budgetGoals.add(goal)
+    return db.budgetGoals.add({ ...goal, monthlyLimit: sanitizeAmount(goal.monthlyLimit) })
   }
 
   const deleteGoal = async (id: number) => {

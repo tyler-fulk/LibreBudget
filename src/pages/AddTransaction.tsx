@@ -4,10 +4,11 @@ import { format } from 'date-fns'
 import { Card } from '../components/ui/Card'
 import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
+import { Modal } from '../components/ui/Modal'
 import { useCategories } from '../hooks/useCategories'
 import { useTransactions } from '../hooks/useTransactions'
 import { EXPENSE_GROUPS, type TransactionType, type CategoryGroup } from '../db/database'
-import { Icon } from '../components/ui/Icon'
+import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
 import { GROUP_LABELS, GROUP_COLORS, getCategoryIconClassName } from '../utils/colors'
 
 export default function AddTransaction() {
@@ -25,6 +26,29 @@ export default function AddTransaction() {
   const [duplicateWarning, setDuplicateWarning] = useState(false)
 
   const activeGroups: CategoryGroup[] = type === 'expense' ? EXPENSE_GROUPS : ['income']
+
+  const { addCategory } = useCategories()
+  const [newCatGroup, setNewCatGroup] = useState<CategoryGroup | null>(null)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatIcon, setNewCatIcon] = useState('Wallet')
+  const [savingCat, setSavingCat] = useState(false)
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim() || !newCatGroup) return
+    setSavingCat(true)
+    const id = await addCategory({
+      name: newCatName.trim(),
+      group: newCatGroup,
+      icon: newCatIcon,
+      color: GROUP_COLORS[newCatGroup],
+      isPreset: false,
+    })
+    setCategoryId(id as number)
+    setNewCatGroup(null)
+    setNewCatName('')
+    setNewCatIcon('Wallet')
+    setSavingCat(false)
+  }
 
   const isDuplicate = useMemo(() => {
     if (!amount || !categoryId) return false
@@ -129,7 +153,6 @@ export default function AddTransaction() {
             <div className="space-y-3">
               {activeGroups.map((group) => {
                 const cats = categoriesByGroup(group)
-                if (cats.length === 0) return null
                 return (
                   <div key={group}>
                     {activeGroups.length > 1 && (
@@ -141,30 +164,37 @@ export default function AddTransaction() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      {cats.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setCategoryId(cat.id!)}
-                          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                            categoryId === cat.id
-                              ? 'border-transparent text-white'
-                              : 'border-slate-700 text-slate-300 hover:border-slate-600'
-                          }`}
-                          style={
-                            categoryId === cat.id
-                              ? { backgroundColor: GROUP_COLORS[cat.group] }
-                              : undefined
-                          }
-                        >
-                          <Icon
-                            name={cat.icon}
-                            size={18}
-                            className={categoryId === cat.id ? '' : getCategoryIconClassName(cat.group)}
-                          />
-                          {cat.name}
-                        </button>
-                      ))}
+                      {cats.map((cat) => {
+                        const selected = categoryId === cat.id
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setCategoryId(cat.id!)}
+                            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                              selected
+                                ? 'border-transparent text-white'
+                                : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
+                            }`}
+                            style={selected ? { backgroundColor: GROUP_COLORS[cat.group] } : undefined}
+                          >
+                            <Icon
+                              name={cat.icon}
+                              size={16}
+                              className={selected ? '' : getCategoryIconClassName(cat.group)}
+                            />
+                            {cat.name}
+                          </button>
+                        )
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => { setNewCatGroup(group); setNewCatName(''); setNewCatIcon('Wallet') }}
+                        className="flex items-center gap-1 rounded-lg border border-dashed border-slate-600 px-3 py-1.5 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-300 transition-colors"
+                      >
+                        <Icon name="Plus" size={14} />
+                        New
+                      </button>
                     </div>
                   </div>
                 )
@@ -233,6 +263,53 @@ export default function AddTransaction() {
           </Button>
         </form>
       </Card>
+
+      {/* New Category Modal */}
+      <Modal
+        open={!!newCatGroup}
+        onClose={() => setNewCatGroup(null)}
+        title={`New ${newCatGroup ? GROUP_LABELS[newCatGroup] : ''} Category`}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm text-slate-400">Name</label>
+            <input
+              type="text"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder="e.g. Pet Care"
+              autoFocus
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm text-slate-400">Icon</label>
+            <div className="grid grid-cols-8 gap-1.5">
+              {CATEGORY_ICONS.map((ic) => (
+                <button
+                  key={ic}
+                  type="button"
+                  onClick={() => setNewCatIcon(ic)}
+                  className={`flex h-9 w-full items-center justify-center rounded-lg transition-colors ${
+                    newCatIcon === ic
+                      ? 'bg-slate-700 ring-2 ring-green-500 text-green-400'
+                      : 'hover:bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Icon name={ic} size={17} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button
+            onClick={handleCreateCategory}
+            className="w-full"
+            disabled={!newCatName.trim() || savingCat}
+          >
+            {savingCat ? 'Creating...' : 'Create Category'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

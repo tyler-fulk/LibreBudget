@@ -1,8 +1,8 @@
 /** Shared sanitization for imported data. */
 
-export const MAX_STRING_LENGTH = 500
-export const MAX_AMOUNT = 999_999_999.99
-export const AMOUNT_DECIMALS = 2
+const MAX_STRING_LENGTH = 500
+const MAX_AMOUNT = 999_999_999.99
+const AMOUNT_DECIMALS = 2
 
 /** Sanitize strings: strip HTML/scripts, control chars, enforce length. */
 export function sanitizeString(value: string, maxLen = MAX_STRING_LENGTH): string {

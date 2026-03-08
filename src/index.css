@@ -7,7 +7,7 @@
   --color-budget-red: #ef4444;
   --color-needs: #eab308;
   --color-wants: #f97316;
-  --color-investments: #3b82f6;
+  --color-savings: #3b82f6;
   --color-income: #22c55e;
   --animate-slide-in-up: slide-in-up 0.3s ease-out;
   --animate-slide-up: slide-up 0.2s ease-out;
@@ -38,31 +38,39 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Light theme overrides */
-html.light body { background: #f8fafc; color: #0f172a; }
-html.light .bg-slate-950 { background-color: #f8fafc; }
-html.light .bg-slate-900 { background-color: #ffffff; }
-html.light .bg-slate-800 { background-color: #f1f5f9; }
-html.light .bg-slate-800\/50 { background-color: rgb(241 245 249 / 0.5); }
-html.light .border-slate-800 { border-color: #e2e8f0; }
-html.light .border-slate-700 { border-color: #cbd5e1; }
+/* App logo: smooth scaling / antialiasing when scaled down */
+.app-logo {
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Light theme overrides – darker for better readability, deeper accent colors */
+html.light body { background: #cbd5e1; color: #0f172a; }
+html.light .bg-slate-950 { background-color: #cbd5e1; }
+html.light .bg-slate-900 { background-color: #e2e8f0; }
+html.light .bg-slate-800 { background-color: #cbd5e1; }
+html.light .bg-slate-800\/50 { background-color: rgb(203 213 225 / 0.5); }
+html.light .border-slate-800 { border-color: #94a3b8; }
+html.light .border-slate-700 { border-color: #64748b; }
 html.light .text-slate-100 { color: #0f172a; }
 html.light .text-slate-200 { color: #1e293b; }
 html.light .text-slate-300 { color: #334155; }
-html.light .text-slate-400 { color: #64748b; }
-html.light .text-slate-500 { color: #94a3b8; }
-html.light .text-slate-600 { color: #94a3b8; }
-html.light .placeholder-slate-500::placeholder { color: #94a3b8; }
-html.light .hover\:bg-slate-800:hover { background-color: #f1f5f9; }
-html.light .hover\:bg-slate-800\/50:hover { background-color: rgb(241 245 249 / 0.5); }
+html.light .text-slate-400 { color: #334155; }
+html.light .text-slate-500 { color: #475569; }
+html.light .text-slate-600 { color: #334155; }
+html.light .placeholder-slate-500::placeholder { color: #475569; }
+html.light .hover\:bg-slate-800:hover { background-color: #cbd5e1; }
+html.light .hover\:bg-slate-800\/50:hover { background-color: rgb(203 213 225 / 0.5); }
 html.light .hover\:text-slate-200:hover { color: #1e293b; }
 html.light .hover\:text-slate-300:hover { color: #334155; }
-html.light .hover\:border-slate-700:hover { border-color: #cbd5e1; }
-html.light .hover\:border-slate-600:hover { border-color: #94a3b8; }
-html.light .bg-slate-900\/95 { background-color: rgb(255 255 255 / 0.95); }
-html.light .bg-slate-700 { background-color: #e2e8f0; }
-html.light .bg-slate-600 { background-color: #cbd5e1; }
-html.light .hover\:bg-slate-600:hover { background-color: #cbd5e1; }
+html.light .hover\:border-slate-700:hover { border-color: #64748b; }
+html.light .hover\:border-slate-600:hover { border-color: #475569; }
+html.light .bg-slate-900\/95 { background-color: rgb(226 232 240 / 0.95); }
+html.light .bg-slate-700 { background-color: #94a3b8; }
+html.light .bg-slate-600 { background-color: #64748b; }
+html.light .hover\:bg-slate-600:hover { background-color: #94a3b8; }
 html.light .hover\:bg-slate-700:hover { background-color: #cbd5e1; }
 
 /* Dark theme: use neutral grey instead of slate (less blue, more modern) */
@@ -91,12 +99,61 @@ html:not(.light) .bg-slate-700 { background-color: #404040; }
 /* Category icon colors – match master category, with dark variants for light mode */
 .category-icon-needs { color: #eab308; }
 .category-icon-wants { color: #f97316; }
-.category-icon-investments { color: #3b82f6; }
+.category-icon-savings { color: #3b82f6; }
 .category-icon-income { color: #22c55e; }
 html.light .category-icon-needs { color: #ca8a04; }
 html.light .category-icon-wants { color: #ea580c; }
-html.light .category-icon-investments { color: #2563eb; }
-html.light .category-icon-income { color: #15803d; }
+html.light .category-icon-savings { color: #2563eb; }
+html.light .category-icon-income { color: #008526; }
+
+/* Light mode: accent green set to #008526 */
+html.light .text-green-400 { color: #008526; }
+html.light .text-green-300 { color: #008526; }
+html.light .text-green-500 { color: #008526; }
+html.light .bg-green-600 { background-color: #008526; }
+html.light .bg-green-500 { background-color: #008526; }
+html.light .bg-green-500\/10 { background-color: rgb(0 133 38 / 0.15); }
+html.light .bg-green-600\/15 { background-color: rgb(0 133 38 / 0.2); }
+html.light .bg-green-600\/20 { background-color: rgb(0 133 38 / 0.25); }
+html.light .border-green-500 { border-color: #008526; }
+html.light .border-green-800 { border-color: #006b1f; }
+html.light .ring-green-500 { --tw-ring-color: #008526; }
+html.light .focus\:border-green-500:focus { border-color: #008526; }
+html.light .focus\:ring-green-500:focus { --tw-ring-color: #008526; }
+html.light .hover\:text-green-400:hover { color: #008526; }
+html.light .hover\:text-green-300:hover { color: #008526; }
+html.light .hover\:bg-green-700:hover { background-color: #006b1f; }
+html.light .bg-green-900\/20 { background-color: rgb(0 133 38 / 0.2); }
+html.light .bg-green-900\/30 { background-color: rgb(0 133 38 / 0.25); }
+
+/* Light mode: darker blues, reds, yellows, oranges */
+html.light .text-blue-400 { color: #1d4ed8; }
+html.light .text-red-400 { color: #b91c1c; }
+html.light .text-yellow-400 { color: #a16207; }
+html.light .text-orange-400 { color: #c2410c; }
+html.light .bg-red-500\/10 { background-color: rgb(185 28 28 / 0.15); }
+html.light .bg-orange-900\/30 { background-color: rgb(194 65 12 / 0.2); }
+
+/* Light mode: budget health bar track background */
+html.light .health-bar-track {
+  background-color: #ccd5e1 !important;
+}
+
+/* Light mode: darker backgrounds for other progress bars */
+html.light .progress-track {
+  background-color: #94a3b8 !important;
+}
+
+/* Light mode: dark text on health bar (was white, hard to read on light track) */
+html.light .health-bar-text {
+  color: #0f172a !important;
+}
+
+/* Light mode: budget health bar fill to black */
+html.light .health-bar-fill {
+  background-color: #0f172a !important;
+  box-shadow: 0 0 12px rgba(15, 23, 42, 0.3) !important;
+}
 
 /* Scrollbars – match theme (green/slate, no blue) */
 * {
@@ -118,19 +175,24 @@ html.light .category-icon-income { color: #15803d; }
   background: #525252;
 }
 html.light * {
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #64748b transparent;
 }
 html.light *::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #64748b;
 }
 html.light *::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #475569;
 }
 
 @utility scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: #404040 transparent;
 }
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
 html.light .scrollbar-thin {
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #64748b transparent;
 }

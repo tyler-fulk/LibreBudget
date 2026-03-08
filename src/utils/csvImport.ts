@@ -134,7 +134,7 @@ function findDescColumn(len: number, dateIdx: number, amountIdx: number): number
   return 2
 }
 
-const VALID_GROUPS = ['needs', 'wants', 'investments', 'income'] as const
+const VALID_GROUPS = ['needs', 'wants', 'savings', 'income'] as const
 
 function normalizeGroup(raw: string): string {
   const lower = raw.trim().toLowerCase()

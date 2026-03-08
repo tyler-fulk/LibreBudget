@@ -27,12 +27,17 @@ function SeverityBadge({ severity }: { severity: Severity }) {
   )
 }
 
-function FindingItem({ finding }: { finding: Finding }) {
+function FindingItem({ finding, effectivePenalty }: { finding: Finding; effectivePenalty: number }) {
   return (
     <div className="flex items-start gap-2 rounded-lg bg-slate-800/50 px-3 py-2">
       <SeverityBadge severity={finding.severity} />
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-200">{finding.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-slate-200">{finding.title}</p>
+          <span className="text-xs font-mono text-red-400 shrink-0">
+            -{effectivePenalty.toFixed(1)} pts
+          </span>
+        </div>
         <p className="text-xs text-slate-500 mt-0.5">{finding.description}</p>
       </div>
     </div>
@@ -55,6 +60,18 @@ export function FinancialHealthScore() {
   const gradeColor = GRADE_COLORS[grade] ?? 'text-slate-200'
   const showExpand = findings.length > 2
 
+  // Compute effective penalties ascending (small findings consume pool first,
+  // so uncapped ones like budget overrun only take what's left), then reverse
+  // for display so the highest-impact finding appears at the top.
+  let pool = 10
+  const effectivePenalties = findings.map((f) => {
+    const effective = Math.min(f.penaltyAmount, pool)
+    pool = Math.max(0, pool - effective)
+    return effective
+  })
+  const displayFindings = [...findings].reverse()
+  const displayPenalties = [...effectivePenalties].reverse()
+
   return (
     <Card>
       <div className="space-y-3">
@@ -71,19 +88,19 @@ export function FinancialHealthScore() {
                 Modeled after the Common Vulnerability Scoring System (CVSS). Client-side algorithms scan your decrypted data for single points of failure: income concentration, low emergency fund, high debt-to-income, poor credit, budget overrun, and more. Each finding is flagged as High, Medium, or Low severity.
               </p>
               <p className="text-xs text-slate-400 leading-relaxed">
-                <strong className="text-slate-300">Scale:</strong> 10 = no risks. High findings subtract 3, Medium 1.5, Low 0.5. Grades: Minimal (9–10), Low (7–8.9), Medium (5–6.9), High (3–4.9), Critical (0–2.9).
+                <strong className="text-slate-300">Scale:</strong> 10 = no risks. Key checks (budget overrun, emergency fund, debt-to-income) use proportional deductions that grow with severity — up to 3.0 pts each. Other findings use flat deductions: High −3.0, Medium −1.5, Low −0.5. Grades: Minimal (9–10), Low (7–8.9), Medium (5–6.9), High (3–4.9), Critical (0–2.9).
               </p>
             </div>
           </div>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-bold text-slate-100">{score.toFixed(1)}</span>
-          <span className={`text-lg font-semibold ${gradeColor}`}>{grade}</span>
+          <span className={`text-lg font-semibold ${gradeColor}`}>{grade} Risk</span>
         </div>
         {findings.length > 0 ? (
           <div className="space-y-2">
-            {(showExpand && !expanded ? findings.slice(0, 2) : findings).map((f) => (
-              <FindingItem key={f.id} finding={f} />
+            {(showExpand && !expanded ? displayFindings.slice(0, 2) : displayFindings).map((f, i) => (
+              <FindingItem key={f.id} finding={f} effectivePenalty={displayPenalties[i]} />
             ))}
             {showExpand && (
               <button

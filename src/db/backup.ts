@@ -2,7 +2,7 @@ import { db } from './database'
 import type { Category, CategoryGroup, CreditScoreEntry, Debt, RecurrenceInterval, SavingsGoal, SavingsGoalType, TransactionType } from './database'
 import { sanitizeAmount, sanitizeString } from '../utils/sanitize'
 
-const VALID_GROUPS: CategoryGroup[] = ['needs', 'wants', 'investments', 'income']
+const VALID_GROUPS: CategoryGroup[] = ['needs', 'wants', 'savings', 'income']
 const VALID_INTERVALS: RecurrenceInterval[] = ['daily', 'weekly', 'biweekly', 'monthly', 'yearly']
 
 export interface BackupPayload {

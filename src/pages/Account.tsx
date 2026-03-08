@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
+import { AccountOnboarding } from '../components/AccountOnboarding'
 import { useWallet } from '../hooks/useWallet'
 import { useCloudBackup } from '../hooks/useCloudBackup'
 import { Icon } from '../components/ui/Icon'
@@ -37,7 +38,9 @@ export default function Account() {
 
   if (!BACKUP_API_URL) {
     return (
-      <div className="space-y-6">
+      <>
+        <AccountOnboarding />
+        <div className="space-y-6">
         <h1 className="text-2xl font-bold">Account</h1>
         <Card>
           <div className="space-y-3 py-4 text-center">
@@ -78,12 +81,15 @@ export default function Account() {
           </div>
         </Card>
       </div>
+      </>
     )
   }
 
   if (!hasWallet) {
     return (
-      <div className="space-y-6">
+      <>
+        <AccountOnboarding />
+        <div className="space-y-6">
         <h1 className="text-2xl font-bold">Account</h1>
         <Card className="max-w-md mx-auto">
           <div className="mb-5 text-center">
@@ -116,11 +122,14 @@ export default function Account() {
           </p>
         </Card>
       </div>
+      </>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <AccountOnboarding />
+      <div className="space-y-6">
       <h1 className="text-2xl font-bold">Account</h1>
 
       <Card>
@@ -298,5 +307,6 @@ export default function Account() {
         </ul>
       </Card>
     </div>
+    </>
   )
 }

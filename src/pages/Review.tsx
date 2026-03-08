@@ -223,10 +223,10 @@ export default function Review() {
                   radius={[0, 0, 0, 0]}
                 />
                 <Bar
-                  dataKey="groupBreakdown.investments"
+                  dataKey="groupBreakdown.savings"
                   stackId="a"
-                  fill={GROUP_COLORS.investments}
-                  name="Investments"
+                  fill={GROUP_COLORS.savings}
+                  name="Savings"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>

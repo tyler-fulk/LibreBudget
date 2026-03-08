@@ -184,13 +184,13 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
 
 /** Icon names for debt picker */
 export const DEBT_ICONS = [
-  'TrendingDown',
   'CreditCard',
   'Home',
-  'GraduationCap',
   'Car',
+  'GraduationCap',
   'HeartPulse',
   'Smartphone',
+  'TrendingDown',
   'Wallet',
   'Building2',
 ] as const

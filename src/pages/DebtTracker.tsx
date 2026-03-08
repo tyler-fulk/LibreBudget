@@ -23,7 +23,7 @@ export default function DebtTracker() {
   const [strategy, setStrategy] = useState<'snowball' | 'avalanche'>('avalanche')
 
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState('TrendingDown')
+  const [icon, setIcon] = useState('CreditCard')
   const [balance, setBalance] = useState('')
   const [rate, setRate] = useState('')
   const [minPayment, setMinPayment] = useState('')
@@ -31,11 +31,12 @@ export default function DebtTracker() {
   const [targetMonthlyPayment, setTargetMonthlyPayment] = useState('')
   const [dueDay, setDueDay] = useState('')
   const [notes, setNotes] = useState('')
+  const [annualFee, setAnnualFee] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
 
   const resetForm = () => {
     setName('')
-    setIcon('TrendingDown')
+    setIcon('CreditCard')
     setBalance('')
     setRate('')
     setMinPayment('')
@@ -43,6 +44,7 @@ export default function DebtTracker() {
     setTargetMonthlyPayment('')
     setDueDay('')
     setNotes('')
+    setAnnualFee('')
     setEditingDebt(null)
   }
 
@@ -57,6 +59,7 @@ export default function DebtTracker() {
     setTargetMonthlyPayment(debt.targetMonthlyPayment != null ? String(debt.targetMonthlyPayment) : '')
     setDueDay(debt.dueDay != null ? String(debt.dueDay) : '')
     setNotes(debt.notes ?? '')
+    setAnnualFee(debt.annualFee != null ? String(debt.annualFee) : '')
     setShowModal(true)
   }
 
@@ -72,6 +75,7 @@ export default function DebtTracker() {
       targetMonthlyPayment: targetMonthlyPayment ? parseFloat(targetMonthlyPayment) : undefined,
       dueDay: dueDay ? Math.min(31, Math.max(1, parseInt(dueDay, 10))) : undefined,
       notes: notes.trim() || undefined,
+      annualFee: icon === 'CreditCard' && annualFee ? parseFloat(annualFee) : undefined,
     })
     setShowModal(false)
     resetForm()
@@ -89,6 +93,7 @@ export default function DebtTracker() {
       targetMonthlyPayment: targetMonthlyPayment ? parseFloat(targetMonthlyPayment) : undefined,
       dueDay: dueDay ? Math.min(31, Math.max(1, parseInt(dueDay, 10))) : undefined,
       notes: notes.trim() || undefined,
+      annualFee: icon === 'CreditCard' && annualFee ? parseFloat(annualFee) : undefined,
     })
     setShowModal(false)
     resetForm()
@@ -103,7 +108,7 @@ export default function DebtTracker() {
       await updateDebt(showPayment, { balance: newBalance })
 
       const debtPayoffCat = await db.categories.where('name').equals('Debt Payoff').first()
-        ?? (await db.categories.where('group').equals('investments').first())
+        ?? (await db.categories.where('group').equals('needs').first())
       if (debtPayoffCat?.id) {
         await db.transactions.add({
           amount,
@@ -215,6 +220,9 @@ export default function DebtTracker() {
                           <span className="text-green-400"> · Target: {formatCurrency(effPayment)}/mo</span>
                         )}
                         {debt.dueDay != null && ` · Due day ${debt.dueDay}`}
+                        {debt.annualFee != null && debt.annualFee > 0 && (
+                          <span className="text-slate-400"> · {formatCurrency(debt.annualFee)}/yr fee</span>
+                        )}
                         {monthsLeft > 0 && !isPaidOff && (
                           <>
                             · {monthsLeft} mo left · {formatCurrency(interestCost)} interest
@@ -360,7 +368,17 @@ export default function DebtTracker() {
               <input type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)}
                 placeholder="e.g. 15" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
-            <div />
+            {icon === 'CreditCard' && (
+              <div>
+                <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Annual Fee <EncryptionBadge /></label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                  <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
+                    placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+                </div>
+              </div>
+            )}
+            {icon !== 'CreditCard' && <div />}
           </div>
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Notes</label>

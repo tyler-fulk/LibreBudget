@@ -11,6 +11,7 @@ export interface Finding {
   title: string
   severity: Severity
   description: string
+  penaltyAmount: number
 }
 
 export interface FinancialRiskResult {
@@ -27,6 +28,13 @@ const GRADE_RANGES: { min: number; label: string }[] = [
   { min: 0, label: 'Critical' },
 ]
 
+/** Severity → flat penalty used by non-proportional checks. */
+const SEVERITY_PENALTY: Record<Severity, number> = {
+  high: 3.0,
+  medium: 1.5,
+  low: 0.5,
+}
+
 function getGrade(score: number): string {
   for (const g of GRADE_RANGES) {
     if (score >= g.min) return g.label
@@ -34,49 +42,35 @@ function getGrade(score: number): string {
   return 'Critical'
 }
 
-function groupIncomeByCategory(transactions: Transaction[]): Record<number, number> {
-  const grouped: Record<number, number> = {}
-  for (const t of transactions) {
-    if (t.type === 'income') {
-      grouped[t.categoryId] = (grouped[t.categoryId] || 0) + t.amount
-    }
-  }
-  return grouped
+// ---------------------------------------------------------------------------
+// Math utilities
+// ---------------------------------------------------------------------------
+
+/** Clamps a number between min and max (inclusive). */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
 }
 
-function checkIncomeConcentration(
-  transactions: Transaction[],
-  catNames: Map<number, string>,
-): Finding[] {
-  const incomeByCat = groupIncomeByCategory(transactions)
-  const totalIncome = sumByType(transactions, 'income')
-  if (totalIncome <= 0) return []
-
-  const findings: Finding[] = []
-  for (const [catId, amount] of Object.entries(incomeByCat)) {
-    const pct = (amount / totalIncome) * 100
-    const name = catNames.get(Number(catId)) ?? 'Unknown'
-    if (pct >= 90) {
-      findings.push({
-        id: 'income-concentration-high',
-        title: 'Income concentration',
-        severity: 'high',
-        description: `${name} accounts for ${pct.toFixed(0)}% of income (≥90% is a single point of failure).`,
-      })
-      break
-    }
-    if (pct >= 70) {
-      findings.push({
-        id: 'income-concentration-medium',
-        title: 'Income concentration',
-        severity: 'medium',
-        description: `${name} accounts for ${pct.toFixed(0)}% of income (70–89%). Consider diversifying.`,
-      })
-      break
-    }
-  }
-  return findings
+/**
+ * Linear interpolation penalty.
+ * Returns 0 when value ≤ thresholdStart, maxPenalty when value ≥ thresholdMax,
+ * and scales proportionally in between.
+ */
+export function calculateProportionalPenalty(
+  value: number,
+  thresholdStart: number,
+  thresholdMax: number,
+  maxPenalty: number,
+): number {
+  if (value <= thresholdStart) return 0
+  if (value >= thresholdMax) return maxPenalty
+  return ((value - thresholdStart) / (thresholdMax - thresholdStart)) * maxPenalty
 }
+
+// ---------------------------------------------------------------------------
+// Check helpers
+// ---------------------------------------------------------------------------
+
 
 function checkNoEmergencyFund(
   savingsGoals: { type: string; currentAmount: number }[],
@@ -85,99 +79,134 @@ function checkNoEmergencyFund(
     (g) => g.type === 'emergency_fund' && g.currentAmount > 0,
   )
   if (hasEmergencyFund) return []
+  const severity: Severity = 'high'
   return [{
     id: 'no-emergency-fund',
     title: 'No emergency fund',
-    severity: 'high',
+    severity,
+    penaltyAmount: SEVERITY_PENALTY[severity],
     description: 'Add an emergency fund to protect against unexpected expenses.',
   }]
 }
 
+/**
+ * Proportional: penalty scales continuously from 0 (at 6 months coverage)
+ * to 3.0 pts (at 0 months coverage). Severity threshold at 3 months.
+ */
 function checkEmergencyFund(
   totalSavings: number,
   avgMonthlyExpenses: number,
 ): Finding[] {
   if (avgMonthlyExpenses <= 0) return []
   const months = totalSavings / avgMonthlyExpenses
-  if (months < 3) {
-    return [{
-      id: 'emergency-fund-high',
-      title: 'Low emergency fund',
-      severity: 'high',
-      description: `Savings cover ${months.toFixed(1)} months of expenses. Target: 3+ months.`,
-    }]
-  }
-  if (months < 6) {
-    return [{
-      id: 'emergency-fund-medium',
-      title: 'Low emergency fund',
-      severity: 'medium',
-      description: `Savings cover ${months.toFixed(1)} months of expenses. Target: 6+ months.`,
-    }]
-  }
-  return []
+  if (months >= 6) return []
+
+  // Shortfall from the 6-month ideal (0 → 6 months short → 3.0 pts)
+  const shortfall = 6 - months
+  const penalty = calculateProportionalPenalty(shortfall, 0, 6, 3.0)
+  const severity: Severity = months < 3 ? 'high' : 'medium'
+
+  return [{
+    id: months < 3 ? 'emergency-fund-high' : 'emergency-fund-medium',
+    title: 'Low emergency fund',
+    severity,
+    penaltyAmount: penalty,
+    description: `Savings cover ${months.toFixed(1)} months of expenses. Target: ${months < 3 ? '3+' : '6+'} months.`,
+  }]
 }
 
+/**
+ * Proportional: penalty scales continuously from 0 (at 36% DTI)
+ * to 3.0 pts (at 80%+ DTI). Severity threshold at 43%.
+ */
 function checkDebtToIncome(totalMinPayment: number, totalIncome: number): Finding[] {
   if (totalIncome <= 0) return []
   const ratio = (totalMinPayment / totalIncome) * 100
-  if (ratio > 43) {
-    return [{
-      id: 'debt-to-income-high',
-      title: 'High debt-to-income',
-      severity: 'high',
-      description: `Debt payments are ${ratio.toFixed(0)}% of income (>43%).`,
-    }]
-  }
-  if (ratio >= 36) {
-    return [{
-      id: 'debt-to-income-medium',
-      title: 'High debt-to-income',
-      severity: 'medium',
-      description: `Debt payments are ${ratio.toFixed(0)}% of income (36–43%).`,
-    }]
-  }
-  return []
+  if (ratio < 36) return []
+
+  // Scale from 36% (0 pts) to 80% (3.0 pts cap)
+  const penalty = calculateProportionalPenalty(ratio, 36, 80, 3.0)
+  const severity: Severity = ratio > 43 ? 'high' : 'medium'
+
+  return [{
+    id: ratio > 43 ? 'debt-to-income-high' : 'debt-to-income-medium',
+    title: 'High debt-to-income',
+    severity,
+    penaltyAmount: penalty,
+    description: `Debt payments are ${ratio.toFixed(0)}% of income (threshold: 36%).`,
+  }]
 }
 
 function checkCreditScore(score: number): Finding[] {
   if (score < 580) {
+    const severity: Severity = 'high'
     return [{
       id: 'credit-poor',
       title: 'Poor credit score',
-      severity: 'high',
+      severity,
+      penaltyAmount: SEVERITY_PENALTY[severity],
       description: `Score ${score} is below 580 (Poor).`,
     }]
   }
   if (score < 670) {
+    const severity: Severity = 'medium'
     return [{
       id: 'credit-fair',
       title: 'Fair credit score',
-      severity: 'medium',
+      severity,
+      penaltyAmount: SEVERITY_PENALTY[severity],
       description: `Score ${score} is in Fair range (580–669).`,
     }]
   }
   return []
 }
 
+/**
+ * Stepped, uncapped: penalty increases in 0.5 pt increments based on % over budget.
+ * Score is clamped at 0 by the engine, so this can exceed remaining points.
+ *
+ *   0–5%   over → 0.5 pts  (Low)
+ *   5–10%  over → 1.0 pts  (Low)
+ *   10%+   over → 1.5 pts, then +0.5 per additional 10% over budget
+ *
+ * Examples: 20% over → 2.0, 50% over → 3.5, 100% over → 6.0, 150% over → 8.5
+ */
 function checkBudgetOverrun(projectedExpenses: number, budget: number): Finding[] {
-  if (projectedExpenses <= budget) return []
+  if (projectedExpenses <= budget || budget <= 0) return []
+
+  const overrunPct = ((projectedExpenses - budget) / budget) * 100
+
+  let penalty: number
+  if (overrunPct < 5) {
+    penalty = 0.5
+  } else if (overrunPct < 10) {
+    penalty = 1.0
+  } else {
+    // 1.5 pts at 10%, then +0.5 for each additional 10% beyond that, capped at 10
+    penalty = Math.min(1.5 + Math.floor((overrunPct - 10) / 10) * 0.5, 10)
+  }
+
+  const severity: Severity = penalty >= 2.5 ? 'high' : penalty >= 1.5 ? 'medium' : 'low'
+
   return [{
     id: 'budget-overrun',
     title: 'Budget overrun',
-    severity: 'medium',
-    description: `Projected spend (${projectedExpenses.toFixed(0)}) exceeds budget (${budget.toFixed(0)}).`,
+    severity,
+    penaltyAmount: penalty,
+    description: `Projected spend ($${projectedExpenses.toFixed(0)}) exceeds budget ($${budget.toFixed(0)}) by ${overrunPct.toFixed(0)}%.`,
   }]
 }
 
 function checkDominantExpenseCategory(
   transactions: Transaction[],
-  catNames: Map<number, string>,
+  catMap: Map<number, { name: string; group: string }>,
 ): Finding[] {
   const expenseByCat: Record<number, number> = {}
   let totalExpenses = 0
   for (const t of transactions) {
     if (t.type === 'expense') {
+      const cat = catMap.get(t.categoryId)
+      if (cat?.group === 'savings') continue
       expenseByCat[t.categoryId] = (expenseByCat[t.categoryId] || 0) + t.amount
       totalExpenses += t.amount
     }
@@ -187,11 +216,13 @@ function checkDominantExpenseCategory(
   for (const [catId, amount] of Object.entries(expenseByCat)) {
     const pct = (amount / totalExpenses) * 100
     if (pct > 50) {
-      const name = catNames.get(Number(catId)) ?? 'Unknown'
+      const name = catMap.get(Number(catId))?.name ?? 'Unknown'
+      const severity: Severity = 'low'
       return [{
         id: 'dominant-expense',
         title: 'Dominant expense category',
-        severity: 'low',
+        severity,
+        penaltyAmount: SEVERITY_PENALTY[severity],
         description: `${name} is ${pct.toFixed(0)}% of expenses.`,
       }]
     }
@@ -203,18 +234,22 @@ function checkSavingsRate(totalIncome: number, totalExpenses: number): Finding[]
   if (totalIncome <= 0) return []
   const savingsRate = ((totalIncome - totalExpenses) / totalIncome) * 100
   if (savingsRate < 0) {
+    const severity: Severity = 'high'
     return [{
       id: 'negative-savings',
       title: 'Negative savings rate',
-      severity: 'high',
+      severity,
+      penaltyAmount: SEVERITY_PENALTY[severity],
       description: 'Spending exceeds income.',
     }]
   }
   if (savingsRate < 10) {
+    const severity: Severity = 'low'
     return [{
       id: 'low-savings',
       title: 'Low savings rate',
-      severity: 'low',
+      severity,
+      penaltyAmount: SEVERITY_PENALTY[severity],
       description: `Savings rate is ${savingsRate.toFixed(1)}% (<10%).`,
     }]
   }
@@ -223,13 +258,19 @@ function checkSavingsRate(totalIncome: number, totalExpenses: number): Finding[]
 
 function checkNoRecentData(hasRecentTx: boolean): Finding[] {
   if (hasRecentTx) return []
+  const severity: Severity = 'low'
   return [{
     id: 'no-recent-data',
     title: 'No recent data',
-    severity: 'low',
+    severity,
+    penaltyAmount: SEVERITY_PENALTY[severity],
     description: 'No transactions in the last 30 days.',
   }]
 }
+
+// ---------------------------------------------------------------------------
+// Main scoring engine
+// ---------------------------------------------------------------------------
 
 export async function getFinancialRiskScore(): Promise<FinancialRiskResult> {
   const now = new Date()
@@ -257,9 +298,10 @@ export async function getFinancialRiskScore(): Promise<FinancialRiskResult> {
 
   const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value]))
   const monthlyBudget = parseFloat(settingsMap['monthlyBudget'] ?? '3000')
-  const catMap = new Map(categories.filter((c): c is typeof c & { id: number } => c.id != null).map((c) => [c.id, c]))
-  const catNames = new Map<number, string>(
-    [...catMap.entries()].map(([id, c]) => [id, c.name]),
+  const catMap = new Map(
+    categories
+      .filter((c): c is typeof c & { id: number } => c.id != null)
+      .map((c) => [c.id, { name: c.name, group: c.group }]),
   )
 
   const totalIncome = sumByType(currentTxs, 'income')
@@ -285,25 +327,26 @@ export async function getFinancialRiskScore(): Promise<FinancialRiskResult> {
   const forecast = await getMonthlyForecast(monthlyBudget)
   const hasRecentTx = recentTxs.length > 0
 
+  const emergencyFundFindings = checkNoEmergencyFund(savingsGoals).length > 0
+    ? checkNoEmergencyFund(savingsGoals)
+    : checkEmergencyFund(totalSavings, avgMonthlyExpenses)
+
   const allFindings: Finding[] = [
-    ...checkIncomeConcentration(currentTxs, catNames),
-    ...checkNoEmergencyFund(savingsGoals),
-    ...checkEmergencyFund(totalSavings, avgMonthlyExpenses),
+    ...emergencyFundFindings,
     ...(debts.length > 0 ? checkDebtToIncome(totalMinPayment, totalIncome) : []),
     ...(latestCredit ? checkCreditScore(latestCredit.score) : []),
     ...checkBudgetOverrun(forecast.projectedExpenses, monthlyBudget),
-    ...checkDominantExpenseCategory(currentTxs, catNames),
+    ...checkDominantExpenseCategory(currentTxs, catMap),
     ...checkSavingsRate(totalIncome, totalExpenses),
     ...checkNoRecentData(hasRecentTx),
   ]
 
-  let score = 10
-  for (const f of allFindings) {
-    if (f.severity === 'high') score -= 3
-    else if (f.severity === 'medium') score -= 1.5
-    else score -= 0.5
-  }
-  score = Math.max(0, Math.min(10, Math.round(score * 10) / 10))
+  // Sort ascending so small findings consume the pool first; large uncapped
+  // findings (e.g. budget overrun) render last and only show what remains.
+  allFindings.sort((a, b) => a.penaltyAmount - b.penaltyAmount)
+
+  const totalPenalty = allFindings.reduce((sum, f) => sum + f.penaltyAmount, 0)
+  const score = Math.round(clamp(10 - totalPenalty, 0, 10) * 10) / 10
 
   return {
     score,

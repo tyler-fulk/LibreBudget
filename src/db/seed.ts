@@ -15,13 +15,14 @@ const PRESET_CATEGORIES: Omit<Category, 'id'>[] = [
   { name: 'Subscriptions', group: 'wants', color: '#f97316', icon: 'Smartphone', isPreset: true },
   { name: 'Travel', group: 'wants', color: '#f97316', icon: 'Plane', isPreset: true },
   { name: 'Hobbies', group: 'wants', color: '#f97316', icon: 'Palette', isPreset: true },
-  // Investments (blue)
-  { name: 'Savings', group: 'investments', color: '#3b82f6', icon: 'Wallet', isPreset: true },
-  { name: 'Retirement', group: 'investments', color: '#3b82f6', icon: 'Building2', isPreset: true },
-  { name: 'Stocks', group: 'investments', color: '#3b82f6', icon: 'TrendingUp', isPreset: true },
-  { name: 'Emergency Fund', group: 'investments', color: '#3b82f6', icon: 'LifeBuoy', isPreset: true },
-  { name: 'Education', group: 'investments', color: '#3b82f6', icon: 'GraduationCap', isPreset: true },
-  { name: 'Debt Payoff', group: 'investments', color: '#3b82f6', icon: 'CreditCard', isPreset: true },
+  // Savings (purple) — money kept/invested, not spent
+  { name: 'Savings', group: 'savings', color: '#3b82f6', icon: 'Wallet', isPreset: true },
+  { name: 'Retirement', group: 'savings', color: '#3b82f6', icon: 'Building2', isPreset: true },
+  { name: 'Stocks', group: 'savings', color: '#3b82f6', icon: 'TrendingUp', isPreset: true },
+  { name: 'Emergency Fund', group: 'savings', color: '#3b82f6', icon: 'LifeBuoy', isPreset: true },
+  // Expenses that happen to build future value (still money out the door)
+  { name: 'Education', group: 'needs', color: '#eab308', icon: 'GraduationCap', isPreset: true },
+  { name: 'Debt Payoff', group: 'needs', color: '#eab308', icon: 'CreditCard', isPreset: true },
   // Income (green)
   { name: 'Salary', group: 'income', color: '#22c55e', icon: 'Banknote', isPreset: true },
   { name: 'Freelance', group: 'income', color: '#22c55e', icon: 'Laptop', isPreset: true },

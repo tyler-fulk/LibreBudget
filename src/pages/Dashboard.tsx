@@ -8,6 +8,7 @@ import { RoadmapWidget } from '../components/dashboard/RoadmapWidget'
 import { CategoryDonut } from '../components/dashboard/CategoryDonut'
 import { TopOffenders } from '../components/dashboard/TopOffenders'
 import { QuickStats } from '../components/dashboard/QuickStats'
+import { SavingsTracker } from '../components/dashboard/SavingsTracker'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useSettings } from '../hooks/useSettings'
@@ -30,8 +31,9 @@ const CONFIDENCE_TIPS: Record<string, string> = {
 }
 
 export default function Dashboard() {
-  const { monthlyBudget } = useSettings()
+  const { getMonthlyBudget } = useSettings()
   const [viewDate, setViewDate] = useState(new Date())
+  const monthlyBudget = getMonthlyBudget(format(viewDate, 'yyyy-MM'))
 
   const start = format(startOfMonth(viewDate), 'yyyy-MM-dd')
   const end = format(endOfMonth(viewDate), 'yyyy-MM-dd')
@@ -42,11 +44,15 @@ export default function Dashboard() {
   const [forecast, setForecast] = useState<Forecast | null>(null)
 
   const [groupBreakdown, setGroupBreakdown] = useState<Record<CategoryGroup, number>>({
-    needs: 0, wants: 0, investments: 0, income: 0,
+    needs: 0, wants: 0, savings: 0, income: 0,
   })
 
   const totalIncome = sumByType(transactions, 'income')
   const totalExpenses = sumByType(transactions, 'expense')
+
+  const savedThisMonth = groupBreakdown.savings
+  const spendingExpenses = groupBreakdown.needs + groupBreakdown.wants
+  const effectiveBudget = Math.max(0, monthlyBudget - savedThisMonth)
 
   const categorySpending = Object.entries(groupByCategory(transactions))
     .map(([catId, total]) => ({
@@ -94,10 +100,17 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <QuickStats totalIncome={totalIncome} totalExpenses={totalExpenses} budget={monthlyBudget} />
+      <QuickStats
+        totalIncome={totalIncome}
+        totalExpenses={totalExpenses}
+        savedThisMonth={savedThisMonth}
+        effectiveBudget={effectiveBudget}
+      />
+
+      <SavingsTracker saved={savedThisMonth} budget={monthlyBudget} />
 
       <Card>
-        <HealthBar spent={totalExpenses} budget={monthlyBudget} />
+        <HealthBar spent={spendingExpenses} budget={effectiveBudget} saved={savedThisMonth} />
       </Card>
 
       <FinancialHealthScore />

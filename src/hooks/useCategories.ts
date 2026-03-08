@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Category, type CategoryGroup } from '../db/database'
+import { sanitizeString } from '../utils/sanitize'
 
 export function useCategories() {
   const categories = useLiveQuery(() => db.categories.toArray()) ?? []
@@ -11,11 +12,20 @@ export function useCategories() {
     categories.find((c) => c.id === id)
 
   const addCategory = async (category: Omit<Category, 'id'>) => {
-    return db.categories.add(category)
+    return db.categories.add({
+      ...category,
+      name: sanitizeString(category.name, 100),
+      color: sanitizeString(category.color ?? '#64748b', 20),
+      icon: sanitizeString(category.icon ?? '', 20),
+    })
   }
 
   const updateCategory = async (id: number, changes: Partial<Category>) => {
-    return db.categories.update(id, changes)
+    const sanitized: Partial<Category> = { ...changes }
+    if (changes.name !== undefined) sanitized.name = sanitizeString(changes.name, 100)
+    if (changes.color !== undefined) sanitized.color = sanitizeString(changes.color, 20)
+    if (changes.icon !== undefined) sanitized.icon = sanitizeString(changes.icon, 20)
+    return db.categories.update(id, sanitized)
   }
 
   const deleteCategory = async (id: number) => {

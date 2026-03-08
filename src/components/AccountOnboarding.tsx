@@ -2,50 +2,42 @@ import { useState, useEffect } from 'react'
 import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
 
+const STORAGE_KEY = 'lb-account-onboarding-done'
+
 const STEPS = [
   {
-    title: 'Welcome to LibreBudget!',
-    description: 'A free, open-source budget tracker. Your data stays on your device by default — nothing is sent to any server unless you opt in.',
-    icon: 'Hand',
+    title: 'The Account System',
+    description: 'Your budget data is stored locally in this browser. The Account page adds optional cloud backup — your data is encrypted before it ever leaves your device.',
+    icon: 'Shield',
   },
   {
-    title: 'Track Income & Expenses',
-    description: 'Add transactions as they happen. Categorize them as needs, wants, or savings to see where your money goes.',
+    title: 'Your Vault',
+    description: 'A vault is created from a 24-word recovery phrase. Those words derive encryption keys that only you control. Never share your phrase — it\'s the key to your data.',
     icon: 'Wallet',
   },
   {
-    title: 'Watch Your Health Bar',
-    description: 'The health bar turns from green to red as you approach your budget limit. Stay green to stay on track!',
-    icon: 'Leaf',
+    title: 'Cloud Backup (Optional)',
+    description: 'With cloud backup enabled, encrypted copies of your data sync to the server after each change. The server never sees your plain data — it\'s encrypted with keys from your phrase.',
+    icon: 'Cloud',
   },
   {
-    title: 'Set Budget Goals',
-    description: 'Set monthly limits for each category group. Track your progress with visual progress bars.',
-    icon: 'Target',
-  },
-  {
-    title: 'Recurring Transactions',
-    description: 'Set up rent, subscriptions, and salary to be auto-logged. Never forget a recurring expense.',
-    icon: 'Repeat',
-  },
-  {
-    title: 'Review & Improve',
-    description: 'Check the Monthly Review and Trends pages to see how you\'re improving over time. You\'ve got this!',
-    icon: 'TrendingUp',
+    title: 'Restore Anywhere',
+    description: 'On a new device or browser? Enter your 24-word phrase to restore your vault, then pull the latest backup. Your data follows you when you need it.',
+    icon: 'Lock',
   },
 ]
 
-export function Onboarding() {
+export function AccountOnboarding() {
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
 
   useEffect(() => {
-    const seen = localStorage.getItem('lb-onboarding-done')
+    const seen = localStorage.getItem(STORAGE_KEY)
     if (!seen) setShow(true)
   }, [])
 
   const finish = () => {
-    localStorage.setItem('lb-onboarding-done', 'true')
+    localStorage.setItem(STORAGE_KEY, 'true')
     setShow(false)
   }
 
@@ -76,12 +68,12 @@ export function Onboarding() {
           {step < STEPS.length - 1 ? (
             <Button onClick={() => setStep(step + 1)} className="flex-1">Next</Button>
           ) : (
-            <Button onClick={finish} className="flex-1">Get Started</Button>
+            <Button onClick={finish} className="flex-1">Got it</Button>
           )}
         </div>
 
         <button onClick={finish} className="mt-4 text-xs text-slate-500 hover:text-slate-300">
-          Skip walkthrough
+          Skip
         </button>
       </div>
     </div>

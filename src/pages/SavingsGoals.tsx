@@ -9,6 +9,48 @@ import { formatCurrency } from '../utils/calculations'
 import type { SavingsGoal } from '../db/database'
 import { Icon, GOAL_ICONS, ACCOUNT_ICONS } from '../components/ui/Icon'
 
+// ---------------------------------------------------------------------------
+// Shared toggle
+// ---------------------------------------------------------------------------
+
+function BudgetToggle({
+  value,
+  onChange,
+  label = 'Count as this month\'s savings contribution',
+  hint = 'Turn off if this money already existed and you\'re just recording it.',
+}: {
+  value: boolean
+  onChange: (v: boolean) => void
+  label?: string
+  hint?: string
+}) {
+  return (
+    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 space-y-1">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-slate-300">{label}</span>
+        <button
+          type="button"
+          onClick={() => onChange(!value)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+            value ? 'bg-blue-500' : 'bg-slate-600'
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+              value ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+      <p className="text-xs text-slate-500">{hint}</p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Cards
+// ---------------------------------------------------------------------------
+
 function SavingsCard({
   item,
   showProgress,
@@ -20,34 +62,46 @@ function SavingsCard({
   onAddFunds: () => void
   onDelete: () => void
 }) {
+  const progress = showProgress && item.targetAmount > 0
+    ? Math.min(item.currentAmount / item.targetAmount, 1)
+    : null
+
   return (
     <Card>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Icon name={item.icon || 'Wallet'} size={28} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
+            <Icon name={item.icon || 'Wallet'} size={22} className="text-blue-400" />
+          </div>
           <div>
             <h3 className="font-medium text-slate-200">{item.name}</h3>
-            <p className="text-xs text-slate-500">Balance: {formatCurrency(item.currentAmount)}</p>
+            <p className="text-xs text-slate-500">
+              {item.type === 'emergency_fund' ? 'Emergency Fund' : item.type === 'savings_account' ? 'Savings Account' : 'Savings Goal'}
+            </p>
           </div>
         </div>
+        <p className="text-lg font-bold text-blue-400">{formatCurrency(item.currentAmount)}</p>
       </div>
-      {showProgress && item.targetAmount > 0 && (
-        <div className="mb-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-300">{formatCurrency(item.currentAmount)}</span>
+
+      {progress !== null && (
+        <div className="mb-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-slate-400">{formatCurrency(item.currentAmount)}</span>
             <span className="text-slate-500">{formatCurrency(item.targetAmount)}</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${Math.min((item.currentAmount / item.targetAmount) * 100, 100)}%`,
-                backgroundColor: item.currentAmount >= item.targetAmount ? '#22c55e' : '#3b82f6',
+                width: `${progress * 100}%`,
+                backgroundColor: progress >= 1 ? '#22c55e' : '#3b82f6',
               }}
             />
           </div>
+          <p className="text-right text-xs text-slate-500 mt-0.5">{(progress * 100).toFixed(0)}%</p>
         </div>
       )}
+
       <div className="flex gap-2">
         <Button size="sm" onClick={onAddFunds} className="flex-1">+ Add Funds</Button>
         <Button size="sm" variant="danger" onClick={onDelete}>Delete</Button>
@@ -56,119 +110,124 @@ function SavingsCard({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function SavingsGoals() {
-  const {
-    goalsOnly,
-    savingsAccounts,
-    emergencyFunds,
-    addGoal,
-    addSavings,
-    deleteGoal,
-    addFunds,
-  } = useSavingsGoals()
+  const { goalsOnly, savingsAccounts, emergencyFunds, addGoal, addSavings, deleteGoal, addFunds } = useSavingsGoals()
+
   const [showModal, setShowModal] = useState<'goal' | 'savings_account' | 'emergency_fund' | null>(null)
   const [showFundModal, setShowFundModal] = useState<number | null>(null)
+
+  // Shared form state
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('Target')
   const [target, setTarget] = useState('')
   const [currentAmount, setCurrentAmount] = useState('')
   const [deadline, setDeadline] = useState('')
+  const [affectsBudgetCreate, setAffectsBudgetCreate] = useState(true)
+
+  // Add funds state
   const [fundAmount, setFundAmount] = useState('')
+  const [affectsBudgetFund, setAffectsBudgetFund] = useState(true)
+
+  const resetForm = () => {
+    setName(''); setIcon('Target'); setTarget('')
+    setCurrentAmount(''); setDeadline(''); setAffectsBudgetCreate(true)
+  }
 
   const handleAddGoal = async () => {
     if (!name.trim() || !target) return
     await addGoal({
-      name: name.trim(),
-      icon,
-      type: 'goal',
-      targetAmount: parseFloat(target),
-      currentAmount: 0,
+      name: name.trim(), icon, type: 'goal',
+      targetAmount: parseFloat(target), currentAmount: 0,
       deadline: deadline || format(new Date(Date.now() + 365 * 86400000), 'yyyy-MM-dd'),
     })
-    setShowModal(null)
-    resetForm()
+    setShowModal(null); resetForm()
   }
 
-  const handleAddSavings = async () => {
+  const handleAddSavings = async (type: 'savings_account' | 'emergency_fund') => {
     if (!name.trim() || !currentAmount) return
-    await addSavings('savings_account', {
-      name: name.trim(),
-      icon,
+    await addSavings(type, {
+      name: name.trim(), icon,
       currentAmount: parseFloat(currentAmount),
-    })
-    setShowModal(null)
-    resetForm()
-  }
-
-  const handleAddEmergencyFund = async () => {
-    if (!name.trim() || !currentAmount) return
-    await addSavings('emergency_fund', {
-      name: name.trim(),
-      icon,
-      currentAmount: parseFloat(currentAmount),
-    })
-    setShowModal(null)
-    resetForm()
-  }
-
-  const resetForm = () => {
-    setName('')
-    setIcon('Target')
-    setTarget('')
-    setCurrentAmount('')
-    setDeadline('')
+    }, affectsBudgetCreate)
+    setShowModal(null); resetForm()
   }
 
   const handleFund = async () => {
     if (!fundAmount || !showFundModal) return
-    await addFunds(showFundModal, parseFloat(fundAmount))
-    setShowFundModal(null)
-    setFundAmount('')
+    await addFunds(showFundModal, parseFloat(fundAmount), affectsBudgetFund)
+    setShowFundModal(null); setFundAmount(''); setAffectsBudgetFund(true)
   }
 
+  // Totals
+  const totalEmergency = emergencyFunds.reduce((s, g) => s + g.currentAmount, 0)
+  const totalSavingsAccounts = savingsAccounts.reduce((s, g) => s + g.currentAmount, 0)
+  const totalGoals = goalsOnly.reduce((s, g) => s + g.currentAmount, 0)
+  const grandTotal = totalEmergency + totalSavingsAccounts + totalGoals
   const hasAny = goalsOnly.length > 0 || savingsAccounts.length > 0 || emergencyFunds.length > 0
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Savings</h1>
             <EncryptionBadge />
           </div>
-          <p className="text-sm text-slate-400">Goals, savings accounts, and emergency funds</p>
+          <p className="text-sm text-slate-400">Accounts, goals & emergency funds</p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => { setShowModal('emergency_fund'); setIcon('Shield'); setCurrentAmount('') }}>
+          <Button size="sm" variant="secondary" onClick={() => { setShowModal('emergency_fund'); setIcon('Shield'); resetForm() }}>
             + Emergency Fund
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => { setShowModal('savings_account'); setIcon('Building2'); setCurrentAmount('') }}>
-            + Savings Account
+          <Button size="sm" variant="secondary" onClick={() => { setShowModal('savings_account'); setIcon('Building2'); resetForm() }}>
+            + Account
           </Button>
-          <Button onClick={() => { setShowModal('goal'); setIcon('Target'); setTarget(''); setCurrentAmount('') }}>
-            + New Goal
+          <Button onClick={() => { setShowModal('goal'); setIcon('Target'); resetForm() }}>
+            + Goal
           </Button>
         </div>
       </div>
 
+      {/* Total savings summary */}
+      {hasAny && (
+        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <p className="text-xs text-slate-400 mb-1">Total Saved</p>
+          <p className="text-3xl font-bold text-blue-400">{formatCurrency(grandTotal)}</p>
+          {(totalEmergency > 0 || totalSavingsAccounts > 0 || totalGoals > 0) && (
+            <div className="flex gap-4 mt-2 text-xs text-slate-500">
+              {totalEmergency > 0 && <span>Emergency: <span className="text-slate-300">{formatCurrency(totalEmergency)}</span></span>}
+              {totalSavingsAccounts > 0 && <span>Accounts: <span className="text-slate-300">{formatCurrency(totalSavingsAccounts)}</span></span>}
+              {totalGoals > 0 && <span>Goals: <span className="text-slate-300">{formatCurrency(totalGoals)}</span></span>}
+            </div>
+          )}
+        </div>
+      )}
+
       {!hasAny && (
-        <Card className="text-center">
-          <p className="text-slate-400 py-8">
-            Add goals, savings accounts, or an emergency fund to get started.
+        <Card>
+          <p className="text-center text-slate-400 py-8">
+            Add savings accounts, goals, or an emergency fund to get started.
           </p>
         </Card>
       )}
 
+      {/* Emergency Funds */}
       {emergencyFunds.length > 0 && (
-        <div>
-          <h2 className="text-sm font-medium text-slate-400 mb-2">Emergency Funds</h2>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-300">Emergency Funds</h2>
+            <span className="text-xs text-blue-400">{formatCurrency(totalEmergency)}</span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {emergencyFunds.map((item) => (
               <SavingsCard
-                key={item.id}
-                item={item}
-                showProgress={false}
-                onAddFunds={() => { setShowFundModal(item.id!); setFundAmount('') }}
+                key={item.id} item={item} showProgress={false}
+                onAddFunds={() => { setShowFundModal(item.id!); setFundAmount(''); setAffectsBudgetFund(true) }}
                 onDelete={() => item.id && deleteGoal(item.id)}
               />
             ))}
@@ -176,16 +235,18 @@ export default function SavingsGoals() {
         </div>
       )}
 
+      {/* Savings Accounts */}
       {savingsAccounts.length > 0 && (
-        <div>
-          <h2 className="text-sm font-medium text-slate-400 mb-2">Savings Accounts</h2>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-300">Savings Accounts</h2>
+            <span className="text-xs text-blue-400">{formatCurrency(totalSavingsAccounts)}</span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {savingsAccounts.map((item) => (
               <SavingsCard
-                key={item.id}
-                item={item}
-                showProgress={false}
-                onAddFunds={() => { setShowFundModal(item.id!); setFundAmount('') }}
+                key={item.id} item={item} showProgress={false}
+                onAddFunds={() => { setShowFundModal(item.id!); setFundAmount(''); setAffectsBudgetFund(true) }}
                 onDelete={() => item.id && deleteGoal(item.id)}
               />
             ))}
@@ -193,69 +254,91 @@ export default function SavingsGoals() {
         </div>
       )}
 
+      {/* Savings Goals */}
       {goalsOnly.length > 0 && (
-        <div>
-          <h2 className="text-sm font-medium text-slate-400 mb-2">Savings Goals</h2>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-300">Savings Goals</h2>
+            <span className="text-xs text-blue-400">{formatCurrency(totalGoals)}</span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
-        {goalsOnly.map((goal) => {
-          const progress = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0
-          const pct = Math.min(progress * 100, 100)
-          const daysLeft = differenceInDays(new Date(goal.deadline), new Date())
-          const completed = goal.currentAmount >= goal.targetAmount
-
-          return (
-            <Card key={goal.id}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Icon name={goal.icon || 'Target'} size={28} />
-                  <div>
-                    <h3 className="font-medium text-slate-200">{goal.name}</h3>
-                    <p className="text-xs text-slate-500">
-                      {completed
-                        ? 'Goal reached!'
-                        : daysLeft > 0
-                          ? `${daysLeft} days left`
-                          : 'Past deadline'}
-                    </p>
+            {goalsOnly.map((goal) => {
+              const progress = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0
+              const completed = goal.currentAmount >= goal.targetAmount
+              const daysLeft = differenceInDays(new Date(goal.deadline), new Date())
+              return (
+                <Card key={goal.id}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
+                        <Icon name={goal.icon || 'Target'} size={22} className="text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-slate-200">{goal.name}</h3>
+                        <p className="text-xs text-slate-500">
+                          {completed ? 'Goal reached! 🎉' : daysLeft > 0 ? `${daysLeft} days left` : 'Past deadline'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-lg font-bold text-blue-400">{formatCurrency(goal.currentAmount)}</p>
                   </div>
-                </div>
-                {completed && <Icon name="Check" size={20} className="text-green-400" />}
-              </div>
-
-              <div className="mb-2">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-300">{formatCurrency(goal.currentAmount)}</span>
-                  <span className="text-slate-500">{formatCurrency(goal.targetAmount)}</span>
-                </div>
-                <div className="h-3 overflow-hidden rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${pct}%`,
-                      backgroundColor: completed ? '#22c55e' : '#3b82f6',
-                    }}
-                  />
-                </div>
-                <p className="text-right text-xs text-slate-500 mt-1">{pct.toFixed(0)}%</p>
-              </div>
-
-              <div className="flex gap-2">
-                {!completed && (
-                  <Button size="sm" onClick={() => { setShowFundModal(goal.id!); setFundAmount('') }} className="flex-1">
-                    + Add Funds
-                  </Button>
-                )}
-                <Button size="sm" variant="danger" onClick={() => goal.id && deleteGoal(goal.id)}>
-                  Delete
-                </Button>
-              </div>
-            </Card>
-          )
-        })}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-slate-400">{formatCurrency(goal.currentAmount)}</span>
+                      <span className="text-slate-500">{formatCurrency(goal.targetAmount)}</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(progress * 100, 100)}%`,
+                          backgroundColor: completed ? '#22c55e' : '#3b82f6',
+                        }}
+                      />
+                    </div>
+                    <p className="text-right text-xs text-slate-500 mt-0.5">{Math.min(progress * 100, 100).toFixed(0)}%</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!completed && (
+                      <Button size="sm" onClick={() => { setShowFundModal(goal.id!); setFundAmount(''); setAffectsBudgetFund(true) }} className="flex-1">
+                        + Add Funds
+                      </Button>
+                    )}
+                    <Button size="sm" variant="danger" onClick={() => goal.id && deleteGoal(goal.id)}>Delete</Button>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         </div>
       )}
 
+      {/* Add Funds Modal */}
+      <Modal open={!!showFundModal} onClose={() => setShowFundModal(null)} title="Add Funds">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount <EncryptionBadge /></label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <input
+                type="number" step="0.01" value={fundAmount}
+                onChange={(e) => setFundAmount(e.target.value)}
+                placeholder="0.00" autoFocus
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <BudgetToggle
+            value={affectsBudgetFund}
+            onChange={setAffectsBudgetFund}
+            label="Count as this month's savings contribution"
+            hint="Turn off if this money already existed and you're just recording it."
+          />
+          <Button onClick={handleFund} className="w-full" disabled={!fundAmount}>Add Funds</Button>
+        </div>
+      </Modal>
+
+      {/* New Savings Goal Modal */}
       <Modal open={showModal === 'goal'} onClose={() => setShowModal(null)} title="New Savings Goal">
         <div className="space-y-4">
           <div>
@@ -263,8 +346,7 @@ export default function SavingsGoals() {
             <div className="flex flex-wrap gap-1.5">
               {GOAL_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
-                >
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-blue-500/20 ring-2 ring-blue-500 text-blue-400' : 'hover:bg-slate-800 text-slate-400'}`}>
                   <Icon name={i} size={18} />
                 </button>
               ))}
@@ -273,14 +355,16 @@ export default function SavingsGoals() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Vacation Fund" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              placeholder="e.g. Vacation Fund"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Amount <EncryptionBadge /></label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={target} onChange={(e) => setTarget(e.target.value)}
-                placeholder="5000" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+                placeholder="5000"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
           </div>
           <div>
@@ -288,10 +372,13 @@ export default function SavingsGoals() {
             <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
           </div>
-          <Button onClick={handleAddGoal} className="w-full" disabled={!name.trim() || !target}>Create Goal</Button>
+          <Button onClick={handleAddGoal} className="w-full" disabled={!name.trim() || !target}>
+            Create Goal
+          </Button>
         </div>
       </Modal>
 
+      {/* Add Savings Account Modal */}
       <Modal open={showModal === 'savings_account'} onClose={() => setShowModal(null)} title="Add Savings Account">
         <div className="space-y-4">
           <div>
@@ -299,8 +386,7 @@ export default function SavingsGoals() {
             <div className="flex flex-wrap gap-1.5">
               {ACCOUNT_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
-                >
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-blue-500/20 ring-2 ring-blue-500 text-blue-400' : 'hover:bg-slate-800 text-slate-400'}`}>
                   <Icon name={i} size={18} />
                 </button>
               ))}
@@ -309,20 +395,31 @@ export default function SavingsGoals() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Chase Savings" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              placeholder="e.g. Chase Savings"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance <EncryptionBadge /></label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={currentAmount} onChange={(e) => setCurrentAmount(e.target.value)}
-                placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+                placeholder="0.00"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
           </div>
-          <Button onClick={handleAddSavings} className="w-full" disabled={!name.trim() || !currentAmount}>Add Account</Button>
+          <BudgetToggle
+            value={affectsBudgetCreate}
+            onChange={setAffectsBudgetCreate}
+            label="Count initial balance as this month's savings"
+            hint="Turn off if this account already existed — the balance won't be added to this month's savings tracker."
+          />
+          <Button onClick={() => handleAddSavings('savings_account')} className="w-full" disabled={!name.trim() || !currentAmount}>
+            Add Account
+          </Button>
         </div>
       </Modal>
 
+      {/* Add Emergency Fund Modal */}
       <Modal open={showModal === 'emergency_fund'} onClose={() => setShowModal(null)} title="Add Emergency Fund">
         <div className="space-y-4">
           <div>
@@ -330,8 +427,7 @@ export default function SavingsGoals() {
             <div className="flex flex-wrap gap-1.5">
               {ACCOUNT_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
-                >
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-blue-500/20 ring-2 ring-blue-500 text-blue-400' : 'hover:bg-slate-800 text-slate-400'}`}>
                   <Icon name={i} size={18} />
                 </button>
               ))}
@@ -340,31 +436,27 @@ export default function SavingsGoals() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Emergency Fund" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              placeholder="e.g. Emergency Fund"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance <EncryptionBadge /></label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={currentAmount} onChange={(e) => setCurrentAmount(e.target.value)}
-                placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+                placeholder="0.00"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
           </div>
-          <Button onClick={handleAddEmergencyFund} className="w-full" disabled={!name.trim() || !currentAmount}>Add Emergency Fund</Button>
-        </div>
-      </Modal>
-
-      <Modal open={!!showFundModal} onClose={() => setShowFundModal(null)} title="Add Funds">
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount <EncryptionBadge /></label>
-          </div>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-            <input type="number" step="0.01" value={fundAmount} onChange={(e) => setFundAmount(e.target.value)}
-              placeholder="0.00" autoFocus className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-          </div>
-          <Button onClick={handleFund} className="w-full" disabled={!fundAmount}>Add</Button>
+          <BudgetToggle
+            value={affectsBudgetCreate}
+            onChange={setAffectsBudgetCreate}
+            label="Count initial balance as this month's savings"
+            hint="Turn off if this fund already existed — the balance won't be added to this month's savings tracker."
+          />
+          <Button onClick={() => handleAddSavings('emergency_fund')} className="w-full" disabled={!name.trim() || !currentAmount}>
+            Add Emergency Fund
+          </Button>
         </div>
       </Modal>
     </div>

@@ -67,7 +67,7 @@ export default function Terms() {
               advice, tax advice, legal advice, or any other form of
               professional advice.
             </strong>{' '}
-            Categories (&quot;needs&quot;, &quot;wants&quot;, &quot;investments&quot;) and the financial
+            Categories (&quot;needs&quot;, &quot;wants&quot;, &quot;savings&quot;) and the financial
             roadmap are general-purpose classifications for convenience. Consult
             a qualified financial advisor for decisions about your finances.
           </p>

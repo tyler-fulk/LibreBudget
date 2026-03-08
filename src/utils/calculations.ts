@@ -65,7 +65,7 @@ export async function groupByCategoryGroup(
   const grouped: Record<CategoryGroup, number> = {
     needs: 0,
     wants: 0,
-    investments: 0,
+    savings: 0,
     income: 0,
   }
 

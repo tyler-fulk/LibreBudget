@@ -50,7 +50,7 @@ export function RoadmapWidget() {
                 <span>{formatCurrency(currentStep.progress)}</span>
                 <span>{formatCurrency(currentStep.target)}</span>
               </div>
-              <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div className="progress-track h-2 rounded-full bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-green-500 rounded-full transition-all duration-500"
                   style={{

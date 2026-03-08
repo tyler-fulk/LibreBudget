@@ -3,14 +3,13 @@ import { formatCurrency } from '../../utils/calculations'
 interface QuickStatsProps {
   totalIncome: number
   totalExpenses: number
-  budget: number
+  savedThisMonth: number
+  effectiveBudget: number
 }
 
-export function QuickStats({ totalIncome, totalExpenses, budget }: QuickStatsProps) {
-  const remaining = budget - totalExpenses
-  const savingsRate = totalIncome > 0
-    ? (((totalIncome - totalExpenses) / totalIncome) * 100)
-    : 0
+export function QuickStats({ totalIncome, totalExpenses, savedThisMonth, effectiveBudget }: QuickStatsProps) {
+  const spendingExpenses = totalExpenses - savedThisMonth
+  const remaining = effectiveBudget - spendingExpenses
 
   const stats = [
     {
@@ -21,7 +20,7 @@ export function QuickStats({ totalIncome, totalExpenses, budget }: QuickStatsPro
     },
     {
       label: 'Expenses',
-      value: formatCurrency(totalExpenses),
+      value: formatCurrency(spendingExpenses),
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/10',
     },
@@ -32,10 +31,10 @@ export function QuickStats({ totalIncome, totalExpenses, budget }: QuickStatsPro
       bgColor: remaining >= 0 ? 'bg-green-500/10' : 'bg-red-500/10',
     },
     {
-      label: 'Savings Rate',
-      value: `${savingsRate.toFixed(1)}%`,
-      color: savingsRate >= 20 ? 'text-green-400' : savingsRate >= 0 ? 'text-yellow-400' : 'text-red-400',
-      bgColor: savingsRate >= 20 ? 'bg-green-500/10' : savingsRate >= 0 ? 'bg-yellow-500/10' : 'bg-red-500/10',
+      label: 'Saved',
+      value: formatCurrency(savedThisMonth),
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
     },
   ]
 

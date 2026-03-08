@@ -11,6 +11,14 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
+const FORMULA_TRIGGERS = /^[=+\-@\t\r]/
+function escapeCsv(s: string): string {
+  if (!s) return '""'
+  const escaped = String(s).replace(/"/g, '""')
+  const prefix = FORMULA_TRIGGERS.test(escaped) ? "'" : ''
+  return `"${prefix}${escaped}"`
+}
+
 export async function exportTransactionsCSV(): Promise<string> {
   const transactions = await db.transactions.orderBy('date').reverse().toArray()
   const categories = await db.categories.toArray()
@@ -23,7 +31,6 @@ export async function exportTransactionsCSV(): Promise<string> {
   const header = 'Date,Type,Category,Group,Amount,Description,Note'
   const rows = transactions.map((t) => {
     const cat = catMap.get(Number(t.categoryId))
-    const escapeCsv = (s: string) => `"${s.replace(/"/g, '""')}"`
     return [
       t.date,
       t.type,

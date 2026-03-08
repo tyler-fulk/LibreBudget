@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
+import { format, subMonths, addMonths, startOfMonth } from 'date-fns'
 import { Card } from '../components/ui/Card'
 import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
@@ -9,22 +9,27 @@ import { useCategories } from '../hooks/useCategories'
 import { useSettings } from '../hooks/useSettings'
 import { useTransactions } from '../hooks/useTransactions'
 import {
-  getCurrentMonth,
-  getCurrentPeriodRange,
   formatCurrency,
   groupByCategory,
 } from '../utils/calculations'
 import { GROUP_COLORS, GROUP_LABELS, getHealthBarColor, getCategoryIconClassName } from '../utils/colors'
-import { EXPENSE_GROUPS, type CategoryGroup } from '../db/database'
+import { BUDGET_GROUPS, type CategoryGroup } from '../db/database'
 import { Icon } from '../components/ui/Icon'
 
 export default function Goals() {
-  const month = getCurrentMonth()
-  const { goals, addGoal, deleteGoal } = useBudgetGoals(month)
+  const [viewDate, setViewDate] = useState(new Date())
+  const isCurrentMonth = format(viewDate, 'yyyy-MM') === format(new Date(), 'yyyy-MM')
+  const viewMonth = format(viewDate, 'yyyy-MM')
+
+  const start = format(startOfMonth(viewDate), 'yyyy-MM-dd')
+  const end = format(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0), 'yyyy-MM-dd')
+
+  const { goals, addGoal, deleteGoal } = useBudgetGoals(viewMonth)
   const { categories, categoriesByGroup } = useCategories()
-  const { trackingPeriod, monthlyBudget, setSetting } = useSettings()
-  const { start, end } = getCurrentPeriodRange(trackingPeriod)
+  const { getMonthlyBudget, setMonthlyBudget } = useSettings()
   const { transactions } = useTransactions(start, end)
+
+  const monthlyBudget = getMonthlyBudget(viewMonth)
 
   const [showModal, setShowModal] = useState(false)
   const [goalType, setGoalType] = useState<'group' | 'category'>('group')
@@ -38,7 +43,8 @@ export default function Goals() {
 
   useEffect(() => {
     setBudgetInput(monthlyBudget.toString())
-  }, [monthlyBudget])
+    setEditBudget(false)
+  }, [viewMonth, monthlyBudget])
 
   const handleAddGoal = async () => {
     if (!limitAmount) return
@@ -46,46 +52,63 @@ export default function Goals() {
       categoryId: goalType === 'category' ? selectedCategoryId : null,
       group: goalType === 'group' ? selectedGroup : null,
       monthlyLimit: parseFloat(limitAmount),
-      month,
+      month: viewMonth,
     })
     setShowModal(false)
     setLimitAmount('')
   }
 
   const handleSaveBudget = async () => {
-    await setSetting('monthlyBudget', budgetInput)
+    await setMonthlyBudget(viewMonth, parseFloat(budgetInput))
     setEditBudget(false)
   }
 
-  const groups = EXPENSE_GROUPS
-
-  const groupSpending = (group: CategoryGroup): number => {
-    return categoriesByGroup(group).reduce(
-      (sum, cat) => sum + (spending[cat.id!] || 0),
-      0,
-    )
-  }
+  const groupSpending = (group: CategoryGroup): number =>
+    categoriesByGroup(group).reduce((sum, cat) => sum + (spending[cat.id!] || 0), 0)
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">Budget Goals</h1>
+            <h1 className="text-2xl font-bold">Budget</h1>
             <EncryptionBadge />
           </div>
-          <p className="text-sm text-slate-400">{format(new Date(), 'MMMM yyyy')}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <button
+              onClick={() => setViewDate((d) => subMonths(d, 1))}
+              className="text-slate-500 hover:text-slate-300 text-sm"
+            >←</button>
+            <p className="text-sm text-slate-400">{format(viewDate, 'MMMM yyyy')}</p>
+            <button
+              onClick={() => setViewDate((d) => addMonths(d, 1))}
+              className="text-slate-500 hover:text-slate-300 text-sm"
+              disabled={isCurrentMonth}
+            >→</button>
+            {!isCurrentMonth && (
+              <button
+                onClick={() => setViewDate(new Date())}
+                className="text-xs text-green-400 hover:text-green-300 ml-1"
+              >Today</button>
+            )}
+          </div>
         </div>
         <Button onClick={() => setShowModal(true)}>+ Add Goal</Button>
       </div>
 
-      {/* Overall Budget */}
+      {/* Monthly Budget */}
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="flex items-center gap-2 text-sm font-medium text-slate-400">
-            Monthly Budget
-            <EncryptionBadge />
-          </h3>
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-medium text-slate-400">
+              {format(viewDate, 'MMMM yyyy')} Budget
+              <EncryptionBadge />
+            </h3>
+            {!isCurrentMonth && (
+              <p className="text-xs text-slate-500 mt-0.5">Past month — edit to override this month's budget</p>
+            )}
+          </div>
           <button
             onClick={() => setEditBudget(!editBudget)}
             className="text-xs text-green-400 hover:text-green-300"
@@ -104,16 +127,14 @@ export default function Goals() {
             <Button onClick={handleSaveBudget}>Save</Button>
           </div>
         ) : (
-          <p className="text-3xl font-bold text-slate-100">
-            {formatCurrency(monthlyBudget)}
-          </p>
+          <p className="text-3xl font-bold text-slate-100">{formatCurrency(monthlyBudget)}</p>
         )}
       </Card>
 
       {/* Group-level goals */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">By Category Group</h2>
-        {groups.map((group) => {
+        {BUDGET_GROUPS.map((group) => {
           const goal = goals.find((g) => g.group === group)
           const spent = groupSpending(group)
           const limit = goal?.monthlyLimit ?? 0
@@ -124,22 +145,13 @@ export default function Goals() {
             <Card key={group}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  <h3 className="font-medium text-slate-200">
-                    {GROUP_LABELS[group]}
-                  </h3>
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+                  <h3 className="font-medium text-slate-200">{GROUP_LABELS[group]}</h3>
                 </div>
                 <div className="text-right text-sm">
-                  <span className="text-slate-300">
-                    {formatCurrency(spent)}
-                  </span>
+                  <span className="text-slate-300">{formatCurrency(spent)}</span>
                   {limit > 0 && (
-                    <span className="text-slate-500">
-                      {' '}/ {formatCurrency(limit)}
-                    </span>
+                    <span className="text-slate-500"> / {formatCurrency(limit)}</span>
                   )}
                 </div>
               </div>
@@ -154,9 +166,7 @@ export default function Goals() {
                   />
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">
-                  No limit set — add a goal to track this group
-                </p>
+                <p className="text-xs text-slate-500">No limit set — add a goal to track this group</p>
               )}
               {goal?.id && (
                 <button
@@ -222,9 +232,7 @@ export default function Goals() {
             <button
               onClick={() => setGoalType('group')}
               className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-                goalType === 'group'
-                  ? 'bg-slate-700 text-slate-100'
-                  : 'text-slate-400'
+                goalType === 'group' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'
               }`}
             >
               By Group
@@ -232,9 +240,7 @@ export default function Goals() {
             <button
               onClick={() => setGoalType('category')}
               className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-                goalType === 'category'
-                  ? 'bg-slate-700 text-slate-100'
-                  : 'text-slate-400'
+                goalType === 'category' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'
               }`}
             >
               By Category
@@ -243,20 +249,14 @@ export default function Goals() {
 
           {goalType === 'group' ? (
             <div className="flex gap-2">
-              {groups.map((g) => (
+              {BUDGET_GROUPS.map((g) => (
                 <button
                   key={g}
                   onClick={() => setSelectedGroup(g)}
                   className={`flex-1 rounded-xl border py-2 text-sm font-medium transition-colors ${
-                    selectedGroup === g
-                      ? 'border-transparent text-white'
-                      : 'border-slate-700 text-slate-400'
+                    selectedGroup === g ? 'border-transparent text-white' : 'border-slate-700 text-slate-400'
                   }`}
-                  style={
-                    selectedGroup === g
-                      ? { backgroundColor: GROUP_COLORS[g] }
-                      : undefined
-                  }
+                  style={selectedGroup === g ? { backgroundColor: GROUP_COLORS[g] } : undefined}
                 >
                   {GROUP_LABELS[g]}
                 </button>
@@ -270,15 +270,15 @@ export default function Goals() {
             >
               <option value="">Select category...</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           )}
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Monthly Limit <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
+              Monthly Limit <EncryptionBadge />
+            </label>
             <input
               type="number"
               step="0.01"

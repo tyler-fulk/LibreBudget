@@ -9,6 +9,7 @@ interface TopOffendersProps {
 
 export function TopOffenders({ categorySpending }: TopOffendersProps) {
   const sorted = [...categorySpending]
+    .filter(({ category }) => category.group !== 'savings')
     .sort((a, b) => b.total - a.total)
     .slice(0, 5)
 
@@ -46,7 +47,7 @@ export function TopOffenders({ categorySpending }: TopOffendersProps) {
                   {formatCurrency(total)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+              <div className="progress-track h-2 overflow-hidden rounded-full bg-slate-800">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{

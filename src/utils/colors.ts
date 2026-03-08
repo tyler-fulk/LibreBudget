@@ -3,16 +3,8 @@ import type { CategoryGroup } from '../db/database'
 export const GROUP_COLORS: Record<CategoryGroup, string> = {
   needs: '#eab308',
   wants: '#f97316',
-  investments: '#3b82f6',
+  savings: '#3b82f6',
   income: '#22c55e',
-}
-
-/** Darker variants for light mode (better contrast on light backgrounds) */
-export const GROUP_COLORS_LIGHT: Record<CategoryGroup, string> = {
-  needs: '#ca8a04',
-  wants: '#ea580c',
-  investments: '#2563eb',
-  income: '#15803d',
 }
 
 /** CSS class for category icons - use group color (dark theme default, light overrides in CSS) */
@@ -23,12 +15,12 @@ export function getCategoryIconClassName(group: CategoryGroup): string {
 export const GROUP_LABELS: Record<CategoryGroup, string> = {
   needs: 'Needs',
   wants: 'Wants',
-  investments: 'Investments',
+  savings: 'Savings',
   income: 'Income',
 }
 
-export function getHealthBarColor(ratio: number): string {
-  if (ratio <= 0.5) return '#22c55e'
+export function getHealthBarColor(ratio: number, theme?: 'dark' | 'light'): string {
+  if (ratio <= 0.5) return theme === 'light' ? '#008526' : '#22c55e'
   if (ratio <= 0.75) return '#eab308'
   if (ratio <= 0.9) return '#f97316'
   return '#ef4444'

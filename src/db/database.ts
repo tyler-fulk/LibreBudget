@@ -1,9 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-export type CategoryGroup = 'needs' | 'wants' | 'investments' | 'income'
+export type CategoryGroup = 'needs' | 'wants' | 'savings' | 'income'
 
-export const EXPENSE_GROUPS: CategoryGroup[] = ['needs', 'wants', 'investments']
-export const ALL_GROUPS: CategoryGroup[] = ['needs', 'wants', 'investments', 'income']
+export const EXPENSE_GROUPS: CategoryGroup[] = ['needs', 'wants']
+export const BUDGET_GROUPS: CategoryGroup[] = ['needs', 'wants', 'savings']
+export const ALL_GROUPS: CategoryGroup[] = ['needs', 'wants', 'savings', 'income']
 export type TransactionType = 'income' | 'expense'
 export type TrackingPeriod = 'weekly' | 'monthly'
 export type RecurrenceInterval = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly'
@@ -95,6 +96,8 @@ export interface Debt {
   dueDay?: number
   /** Optional notes. */
   notes?: string
+  /** Annual fee for credit cards (shown when icon is CreditCard). */
+  annualFee?: number
   createdAt: string
 }
 
@@ -159,6 +162,22 @@ export class LibreBudgetDB extends Dexie {
     }).upgrade((tx) => {
       return tx.table('savingsGoals').toCollection().modify((g: { type?: string }) => {
         if (g.type === undefined) g.type = 'goal'
+      })
+    })
+
+    // v5: rename 'investments' group to 'savings'; Education and Debt Payoff become 'needs'
+    this.version(5).stores({}).upgrade((tx) => {
+      const EXPENSE_NAMES = new Set(['Education', 'Debt Payoff'])
+      return tx.table('categories').toCollection().modify((cat: { group: string; name: string; color: string }) => {
+        if (cat.group === 'investments') {
+          if (EXPENSE_NAMES.has(cat.name)) {
+            cat.group = 'needs'
+            cat.color = '#eab308'
+          } else {
+            cat.group = 'savings'
+            cat.color = '#3b82f6'
+          }
+        }
       })
     })
   }

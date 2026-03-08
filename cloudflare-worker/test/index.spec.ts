@@ -1,20 +1,11 @@
-import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
+import { env, SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import worker from '../src/index';
-
-const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 /** Token required for GET /backup/:id and POST /backup/init (test bypass accepts any non-empty token). */
 const TURNSTILE_TOKEN = 'test-token';
 
-async function fetchWorker(
-	url: string,
-	init?: RequestInit<RequestInitCfProperties>,
-): Promise<Response> {
-	const ctx = createExecutionContext();
-	const response = await worker.fetch(new IncomingRequest(url, init), env, ctx);
-	await waitOnExecutionContext(ctx);
-	return response;
+async function fetchWorker(url: string, init?: RequestInit): Promise<Response> {
+	return SELF.fetch(url, init);
 }
 
 describe('LibreBudget Backup Worker', () => {
@@ -42,7 +33,7 @@ describe('LibreBudget Backup Worker', () => {
 
 		const getRes = await fetchWorker(`https://example.com/backup/${id}`, {
 			method: 'GET',
-			headers: { Origin: 'https://librebudget.app', 'X-Turnstile-Token': TURNSTILE_TOKEN },
+			headers: { Origin: 'http://localhost:5173', 'X-Turnstile-Token': TURNSTILE_TOKEN },
 		});
 		expect(getRes.status).toBe(200);
 		expect(await getRes.text()).toBe(payload);
@@ -94,7 +85,7 @@ describe('LibreBudget Backup Worker', () => {
 
 		const getRes = await fetchWorker(`https://example.com/backup/${id}`, {
 			method: 'GET',
-			headers: { Origin: 'https://librebudget.app', 'X-Turnstile-Token': TURNSTILE_TOKEN },
+			headers: { Origin: 'http://localhost:5173', 'X-Turnstile-Token': TURNSTILE_TOKEN },
 		});
 		expect(getRes.status).toBe(404);
 	});
@@ -106,7 +97,7 @@ describe('LibreBudget Backup Worker', () => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				Origin: 'https://librebudget.app',
+				Origin: 'http://localhost:5173',
 				'X-Turnstile-Token': TURNSTILE_TOKEN,
 			},
 			body: JSON.stringify({ id, payload }),
@@ -116,7 +107,7 @@ describe('LibreBudget Backup Worker', () => {
 
 		const getRes = await fetchWorker(`https://example.com/backup/${id}`, {
 			method: 'GET',
-			headers: { Origin: 'https://librebudget.app', 'X-Turnstile-Token': TURNSTILE_TOKEN },
+			headers: { Origin: 'http://localhost:5173', 'X-Turnstile-Token': TURNSTILE_TOKEN },
 		});
 		expect(getRes.status).toBe(200);
 		expect(await getRes.text()).toBe(payload);

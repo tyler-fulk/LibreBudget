@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { navItems } from './navItems'
+import { navGroups } from './navItems'
 import { useCloudBackup } from '../../hooks/useCloudBackup'
 import { Icon } from '../ui/Icon'
+import logoSrc from '../../../img/192w.png'
+import logoSrc512 from '../../../img/512w.png'
 
 export function Sidebar() {
   const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet, enabled } = useCloudBackup()
@@ -19,27 +21,39 @@ export function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-slate-800 bg-slate-900 md:flex md:flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-slate-800 px-6 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-600 font-bold text-white text-sm">
-          LB
-        </div>
+        <img
+          src={logoSrc}
+          srcSet={`${logoSrc} 1x, ${logoSrc512} 2x`}
+          alt="LibreBudget"
+          className="app-logo h-9 w-9 shrink-0 rounded-lg object-contain"
+        />
         <span className="text-lg font-bold text-slate-100">LibreBudget</span>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3 scrollbar-thin">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-slate-800 text-green-400'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-              }`
-            }
-          >
-            <Icon name={item.icon} size={20} className="shrink-0" />
-            {item.label}
-          </NavLink>
+      <nav className="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-4">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-slate-800 text-green-400'
+                        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  <Icon name={item.icon} size={20} className="shrink-0" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
       <div className="shrink-0 border-t border-slate-800 p-4 space-y-2">
@@ -81,7 +95,7 @@ export function Sidebar() {
           <span>·</span>
           <NavLink to="/terms" className="text-slate-500 hover:text-green-400">Terms</NavLink>
         </div>
-        <p className="text-xs text-slate-500">LibreBudget v1.0</p>
+        <p className="text-xs text-slate-500">LibreBudget v1.1</p>
       </div>
     </aside>
   )

@@ -1,16 +1,19 @@
 import { getHealthBarColor } from '../../utils/colors'
 import { formatCurrency } from '../../utils/calculations'
+import { useTheme } from '../../hooks/useTheme'
 
 interface HealthBarProps {
   spent: number
   budget: number
+  saved?: number
 }
 
-export function HealthBar({ spent, budget }: HealthBarProps) {
+export function HealthBar({ spent, budget, saved = 0 }: HealthBarProps) {
+  const { theme } = useTheme()
   const ratio = budget > 0 ? Math.min(spent / budget, 1.2) : 0
   const remaining = Math.max(budget - spent, 0)
   const percentage = Math.min(ratio * 100, 100)
-  const color = getHealthBarColor(ratio)
+  const color = getHealthBarColor(ratio, theme)
 
   const label =
     ratio <= 0.5
@@ -41,9 +44,9 @@ export function HealthBar({ spent, budget }: HealthBarProps) {
       </div>
 
       {/* HP Bar */}
-      <div className="relative h-6 overflow-hidden rounded-full bg-slate-800">
+      <div className="health-bar-track relative h-6 overflow-hidden rounded-full bg-slate-800">
         <div
-          className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+          className="health-bar-fill absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
           style={{
             width: `${percentage}%`,
             backgroundColor: color,
@@ -51,7 +54,7 @@ export function HealthBar({ spent, budget }: HealthBarProps) {
           }}
         />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold text-white drop-shadow-sm">
+          <span className="health-bar-text text-xs font-bold text-white drop-shadow-sm">
             {formatCurrency(spent)} / {formatCurrency(budget)}
           </span>
         </div>
@@ -61,6 +64,12 @@ export function HealthBar({ spent, budget }: HealthBarProps) {
         <span>{Math.round(percentage)}% used</span>
         <span>{Math.round(100 - Math.min(percentage, 100))}% left</span>
       </div>
+
+      {saved > 0 && (
+        <p className="text-xs text-blue-400 text-center">
+          {formatCurrency(saved)} saved off budget · spending budget adjusted to {formatCurrency(budget)}
+        </p>
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type CreditScoreEntry } from '../db/database'
+import { sanitizeString, sanitizeAmount } from '../utils/sanitize'
 
 export function useCreditScores() {
   const scores = useLiveQuery(
@@ -7,7 +8,12 @@ export function useCreditScores() {
   ) ?? []
 
   const addScore = async (entry: Omit<CreditScoreEntry, 'id' | 'createdAt'>) => {
-    return db.creditScores.add({ ...entry, createdAt: new Date().toISOString() })
+    return db.creditScores.add({
+      ...entry,
+      source: sanitizeString(entry.source ?? '', 100),
+      score: Math.round(sanitizeAmount(entry.score)),
+      createdAt: new Date().toISOString(),
+    })
   }
 
   const deleteScore = async (id: number) => {
