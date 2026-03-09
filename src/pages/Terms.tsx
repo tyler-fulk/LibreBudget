@@ -38,7 +38,7 @@ export default function Terms() {
             provides tools to track income, expenses, budget goals, debts,
             savings goals, recurring transactions, spending trends, and financial
             roadmap progress. Data is stored locally in your browser by default.
-            Optional cloud backup uses a vault (24-word recovery phrase) and
+            Optional cloud backup uses a vault (recovery phrase) and
             encrypts data in your browser before upload; we cannot read your
             data. The Application is provided as a Progressive Web App (PWA)
             that works offline.
@@ -80,7 +80,7 @@ export default function Terms() {
             </li>
             <li>
               <strong>Recovery phrase security:</strong> Maintain the
-              confidentiality of your 24-word recovery phrase. Store it in
+              confidentiality of your recovery phrase. Store it in
               multiple secure locations; do not rely on a single copy (e.g.,
               clipboard or one password manager).
             </li>

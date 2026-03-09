@@ -298,7 +298,7 @@ export default function Account() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-green-400 mt-0.5">4.</span>
-            On a new device, restore with your 24-word phrase
+            On a new device, restore with your recovery phrase
           </li>
           <li className="flex items-start gap-2">
             <span className="text-green-400 mt-0.5">5.</span>

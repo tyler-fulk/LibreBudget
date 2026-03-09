@@ -23,10 +23,11 @@ function base64ToBytes(base64: string): Uint8Array {
 }
 
 /**
- * Generates a new 24-word BIP39 mnemonic for wallet creation.
+ * Generates a new 12-word BIP39 mnemonic for wallet creation.
+ * 128 bits of entropy — the industry standard used by most hardware wallets.
  */
 export function generateWallet(): string {
-  return generateMnemonic(wordlist, 256)
+  return generateMnemonic(wordlist, 128)
 }
 
 /**

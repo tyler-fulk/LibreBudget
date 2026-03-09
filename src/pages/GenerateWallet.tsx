@@ -107,7 +107,7 @@ export default function GenerateWallet() {
               Save Your Recovery Phrase
             </h2>
             <p className="text-sm text-slate-400 mt-1">
-              Write these 24 words down and store them safely. This is the only
+              Write these 12 words down and store them safely. This is the only
               way to recover your cloud backup. Anyone with these words can
               access your data.
             </p>
@@ -116,7 +116,7 @@ export default function GenerateWallet() {
           <div className="rounded-xl bg-slate-800/80 border border-slate-700 p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs text-slate-500 font-medium">
-                Your 24-word recovery phrase
+                Your 12-word recovery phrase
               </p>
               <Button
                 variant="ghost"

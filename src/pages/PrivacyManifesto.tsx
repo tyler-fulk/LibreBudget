@@ -25,7 +25,7 @@ export default function PrivacyManifesto() {
           <p>
             When you enable cloud backup, your data is <strong>encrypted in your
             browser</strong> before it ever leaves. We use <strong>AES-256-GCM</strong> with
-            keys derived from your <strong>24-word recovery phrase</strong> (BIP39
+            keys derived from your <strong>recovery phrase</strong> (BIP39
             seed + HKDF-SHA256). Your recovery phrase never leaves your device.
             We store only ciphertext — an opaque blob. Without your recovery
             phrase, no one (including us, Cloudflare, or an attacker with KV
@@ -59,7 +59,7 @@ export default function PrivacyManifesto() {
 
           <h2>4. Vault-Based Access</h2>
           <ul>
-            <li><strong>Recovery phrase (BIP39)</strong> — Your 24-word mnemonic derives an anonymous storage ID and an encryption key. It never leaves your device.</li>
+            <li><strong>Recovery phrase (BIP39)</strong> — Your 12-word mnemonic derives an anonymous storage ID and an encryption key. It never leaves your device.</li>
             <li><strong>Anonymous storage</strong> — Cloud storage uses a derived 64-character hex ID; no email, no password, no personal identifiers.</li>
             <li><strong>In-memory only</strong> — Vault keys live in browser memory while the tab is open. Lock the vault or close the tab to clear them.</li>
           </ul>

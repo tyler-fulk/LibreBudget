@@ -33,7 +33,7 @@ export default function RestoreWallet() {
   const handleRestore = useCallback(async () => {
     const normalized = mnemonicInput.trim().replace(/\s+/g, ' ')
     if (!validateMnemonic(normalized, wordlist)) {
-      setError('Invalid recovery phrase. Check that all 24 words are correct and in order.')
+      setError('Invalid recovery phrase. Check that all words are correct and in order.')
       return
     }
     setError(null)
@@ -86,7 +86,7 @@ export default function RestoreWallet() {
 
   const normalized = mnemonicInput.trim().replace(/\s+/g, ' ')
   const wordCount = normalized ? normalized.split(' ').length : 0
-  const isValid = wordCount === 24 && validateMnemonic(normalized, wordlist)
+  const isValid = (wordCount === 12 || wordCount === 24) && validateMnemonic(normalized, wordlist)
 
   if (TURNSTILE_REQUIRED && !TURNSTILE_SITE_KEY) {
     return (
@@ -116,14 +116,14 @@ export default function RestoreWallet() {
               Enter Your Recovery Phrase
             </h2>
             <p className="text-sm text-slate-400 mt-1">
-              Paste or type your 24-word recovery phrase to restore your vault
+              Paste or type your recovery phrase to restore your vault
               and cloud backup.
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-sm text-slate-400">
-              Recovery phrase (24 words)
+              Recovery phrase (12 or 24 words)
             </label>
             <textarea
               value={mnemonicInput}
@@ -134,12 +134,12 @@ export default function RestoreWallet() {
             />
             <p className="mt-1 text-xs text-slate-500">
               {wordCount > 0
-                ? wordCount === 24
+                ? (wordCount === 12 || wordCount === 24)
                   ? isValid
                     ? 'Valid phrase'
                     : 'Invalid phrase — check words'
-                  : `${wordCount}/24 words`
-                : 'Enter all 24 words in order'}
+                  : `${wordCount} words (need 12 or 24)`
+                : 'Enter your recovery phrase'}
             </p>
           </div>
 

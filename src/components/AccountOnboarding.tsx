@@ -12,7 +12,7 @@ const STEPS = [
   },
   {
     title: 'Your Vault',
-    description: 'A vault is created from a 24-word recovery phrase. Those words derive encryption keys that only you control. Never share your phrase — it\'s the key to your data.',
+    description: 'A vault is created from a 12-word recovery phrase. Those words derive encryption keys that only you control. Never share your phrase — it\'s the key to your data.',
     icon: 'Wallet',
   },
   {
@@ -22,7 +22,7 @@ const STEPS = [
   },
   {
     title: 'Restore Anywhere',
-    description: 'On a new device or browser? Enter your 24-word phrase to restore your vault, then pull the latest backup. Your data follows you when you need it.',
+    description: 'On a new device or browser? Enter your recovery phrase to restore your vault, then pull the latest backup. Your data follows you when you need it.',
     icon: 'Lock',
   },
 ]

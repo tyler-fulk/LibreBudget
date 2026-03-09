@@ -27,7 +27,7 @@ export default function Privacy() {
             LibreBudget uses a <strong>zero-knowledge</strong> design. We cannot
             see, access, or recover your financial data — even when you use
             optional cloud backup. Your data is encrypted in your browser with
-            keys derived from your 24-word recovery phrase (BIP39 mnemonic)
+            keys derived from your recovery phrase (BIP39 mnemonic)
             before it is ever sent. We store only ciphertext; we never store
             your recovery phrase, encryption keys, or any plaintext. Only you
             hold the keys.
