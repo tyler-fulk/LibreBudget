@@ -8,6 +8,7 @@ import { formatCurrency } from '../utils/calculations'
 import { db } from '../db/database'
 import type { Debt } from '../db/database'
 import { Icon, DEBT_ICONS } from '../components/ui/Icon'
+import { HighInterestPayoffPlan } from '../components/debts/HighInterestPayoffPlan'
 
 export default function DebtTracker() {
   const {
@@ -151,25 +152,58 @@ export default function DebtTracker() {
       </div>
 
       {debts.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <p className="text-xs text-slate-500">Total Debt</p>
-            <p className="text-2xl font-bold text-red-400">{formatCurrency(totalDebt)}</p>
-          </Card>
-          <Card>
-            <p className="text-xs text-slate-500">Monthly Minimum</p>
-            <p className="text-2xl font-bold text-slate-200">{formatCurrency(totalMinPayment)}</p>
-          </Card>
-          <Card>
-            <p className="text-xs text-slate-500">Est. Total Interest</p>
-            <p className="text-2xl font-bold text-orange-400">{formatCurrency(totalInterest)}</p>
-            {maxMonths > 0 && (
-              <p className="text-xs text-slate-500 mt-1">
-                ~{Math.ceil(maxMonths / 12)} year{maxMonths > 12 ? 's' : ''} to payoff
-              </p>
-            )}
-          </Card>
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-5">
+            <Card className="min-w-0 py-5 px-5">
+              <p className="text-xs text-slate-500">Total Debt</p>
+              <p className="mt-1 break-words text-xl font-bold text-red-400 sm:text-2xl">{formatCurrency(totalDebt)}</p>
+            </Card>
+            <Card className="min-w-0 py-5 px-5">
+              <p className="text-xs text-slate-500">Monthly Minimum</p>
+              <p className="mt-1 break-words text-xl font-bold text-slate-200 sm:text-2xl">{formatCurrency(totalMinPayment)}</p>
+            </Card>
+            <Card className="min-w-0 py-5 px-5">
+              <p className="text-xs text-slate-500">Est. Total Interest</p>
+              <p className="mt-1 break-words text-xl font-bold text-orange-400 sm:text-2xl">{formatCurrency(totalInterest)}</p>
+              {maxMonths > 0 && (
+                <p className="text-xs text-slate-500 mt-1">
+                  ~{Math.ceil(maxMonths / 12)} year{maxMonths > 12 ? 's' : ''} to payoff
+                </p>
+              )}
+            </Card>
+            {(() => {
+              const activeDebts = debts.filter((d) => d.balance > 0)
+              const highInterestDebts = activeDebts.filter((d) => d.interestRate > 10)
+              const highInterestTotal = highInterestDebts.reduce((s, d) => s + d.balance, 0)
+              const avgApr = totalDebt > 0
+                ? activeDebts.reduce((s, d) => s + d.interestRate * d.balance, 0) / totalDebt
+                : 0
+              const largestDebt = activeDebts.length > 0 ? activeDebts.reduce((a, b) => (a.balance > b.balance ? a : b)) : null
+              const largestPct = totalDebt > 0 && largestDebt ? (largestDebt.balance / totalDebt) * 100 : 0
+              return (
+                <>
+                  <Card className="min-w-0 py-5 px-5">
+                    <p className="text-xs text-slate-500">High-Interest (&gt;10%)</p>
+                    <p className="mt-1 break-words text-xl font-bold text-amber-400 sm:text-2xl">{formatCurrency(highInterestTotal)}</p>
+                    {totalDebt > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">{(highInterestTotal / totalDebt * 100).toFixed(0)}% of total</p>
+                    )}
+                  </Card>
+                  <Card className="min-w-0 py-5 px-5">
+                    <p className="text-xs text-slate-500">Weighted Avg APR</p>
+                    <p className="mt-1 break-words text-xl font-bold text-slate-200 sm:text-2xl">{avgApr.toFixed(1)}%</p>
+                  </Card>
+                  <Card className="min-w-0 py-5 px-5">
+                    <p className="text-xs text-slate-500">Largest Debt Share</p>
+                    <p className="mt-1 break-words text-xl font-bold text-slate-200 sm:text-2xl">{largestPct.toFixed(0)}%</p>
+                  </Card>
+                </>
+              )
+            })()}
+          </div>
+
+          <HighInterestPayoffPlan debts={debts} getEffectivePayment={getEffectivePayment} />
+        </>
       )}
 
       {debts.length > 0 && (

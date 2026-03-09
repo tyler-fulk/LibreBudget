@@ -57,8 +57,8 @@ export function useFinancialOrder() {
       .filter(g => g.type === 'emergency_fund')
       .reduce((sum, g) => sum + g.currentAmount, 0)
 
-    const hasHighInterestDebt = debts.some(d => d.interestRate > 6 && d.balance > 0)
-    const hasLowInterestDebt = debts.some(d => d.interestRate <= 6 && d.balance > 0)
+    const hasHighInterestDebt = debts.some(d => d.interestRate > 10 && d.balance > 0)
+    const hasLowInterestDebt = debts.some(d => d.interestRate <= 10 && d.balance > 0)
     const hasBudget = budgetGoals.length > 0
 
     const steps: Step[] = [
@@ -81,7 +81,7 @@ export function useFinancialOrder() {
       {
         id: 'high_interest_debt',
         title: 'High Interest Debt',
-        description: 'Pay off credit cards and other debts with interest rates above 6%.',
+        description: 'Pay off credit cards and other debts with interest rates above 10%.',
         isAutomated: true,
         isComplete: !hasHighInterestDebt || manualSteps.has('high_interest_debt'),
         actionLabel: hasHighInterestDebt ? 'View Debts' : undefined,
