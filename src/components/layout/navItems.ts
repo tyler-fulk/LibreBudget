@@ -20,9 +20,10 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Spending',
     items: [
-      { path: '/transactions', icon: 'List', label: 'Transactions' },
       { path: '/goals', icon: 'DollarSign', label: 'Budget' },
+      { path: '/transactions', icon: 'List', label: 'Transactions' },
       { path: '/recurring', icon: 'Repeat', label: 'Recurring' },
+      { path: '/debts', icon: 'TrendingDown', label: 'Debts' },
     ],
   },
   {
@@ -30,8 +31,8 @@ export const navGroups: NavGroup[] = [
     items: [
       { path: '/savings', icon: 'Building2', label: 'Savings' },
       { path: '/calculator', icon: 'BarChart3', label: 'Calculators' },
-      { path: '/debts', icon: 'TrendingDown', label: 'Debts' },
       { path: '/credit-score', icon: 'CreditCard', label: 'Credit Score' },
+      { path: '/roadmap', icon: 'Map', label: 'Roadmap' },
     ],
   },
   {
@@ -40,7 +41,7 @@ export const navGroups: NavGroup[] = [
       { path: '/trends', icon: 'TrendingUp', label: 'Trends' },
       { path: '/review', icon: 'Calendar', label: 'Monthly Review' },
       { path: '/year-review', icon: 'Trophy', label: 'Year Review' },
-      { path: '/roadmap', icon: 'Map', label: 'Roadmap' },
+      { path: '/resources', icon: 'BookOpen', label: 'Resources' },
     ],
   },
   {

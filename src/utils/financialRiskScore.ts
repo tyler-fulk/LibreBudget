@@ -335,7 +335,7 @@ export async function getFinancialRiskScore(): Promise<FinancialRiskResult> {
     ...emergencyFundFindings,
     ...(debts.length > 0 ? checkDebtToIncome(totalMinPayment, totalIncome) : []),
     ...(latestCredit ? checkCreditScore(latestCredit.score) : []),
-    ...checkBudgetOverrun(forecast.projectedExpenses, monthlyBudget),
+    ...checkBudgetOverrun(forecast.projectedExpenses, forecast.effectiveBudget),
     ...checkDominantExpenseCategory(currentTxs, catMap),
     ...checkSavingsRate(totalIncome, totalExpenses),
     ...checkNoRecentData(hasRecentTx),

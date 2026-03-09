@@ -220,6 +220,13 @@ html.light *::-webkit-scrollbar-thumb:hover {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
+
+/* Mobile: safe-area-aware bottom padding for main content */
+@media (max-width: 767px) {
+  .mobile-scroll-padding {
+    padding-bottom: calc(5rem + max(env(safe-area-inset-bottom), 0.75rem));
+  }
+}
 html.light .scrollbar-thin {
   scrollbar-color: #64748b transparent;
 }

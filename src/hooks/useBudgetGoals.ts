@@ -32,5 +32,20 @@ export function useBudgetGoals(month?: string) {
     return db.budgetGoals.delete(id)
   }
 
-  return { goals, addGoal, deleteGoal }
+  const copyFromMonth = async (sourceMonth: string) => {
+    const sourceGoals = await db.budgetGoals
+      .where('month')
+      .equals(sourceMonth)
+      .toArray()
+    for (const g of sourceGoals) {
+      await addGoal({
+        categoryId: g.categoryId,
+        group: g.group,
+        monthlyLimit: g.monthlyLimit,
+        month: targetMonth,
+      })
+    }
+  }
+
+  return { goals, addGoal, deleteGoal, copyFromMonth }
 }

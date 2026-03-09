@@ -52,6 +52,8 @@ import {
   ArrowDownRight,
   Copy,
   Pencil,
+  BookOpen,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -110,6 +112,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ArrowDownRight,
   Copy,
   Pencil,
+  BookOpen,
+  ExternalLink,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { format, subMonths, addMonths, startOfMonth } from 'date-fns'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -17,12 +16,8 @@ import { BUDGET_GROUPS, type CategoryGroup } from '../db/database'
 import { Icon } from '../components/ui/Icon'
 
 const BUDGET_BLUEPRINTS = [
-  { id: '50-25-25', name: '50/25/25', desc: 'Needs 50%, Wants 25%, Savings 25%', needs: 0.5, wants: 0.25, savings: 0.25 },
   { id: '50-30-20', name: '50/30/20', desc: 'Needs 50%, Wants 30%, Savings 20%', needs: 0.5, wants: 0.3, savings: 0.2 },
-  { id: '60-20-20', name: '60/20/20', desc: 'Needs 60%, Wants 20%, Savings 20%', needs: 0.6, wants: 0.2, savings: 0.2 },
-  { id: '60-30-10', name: '60/30/10', desc: 'Needs 60%, Wants 30%, Savings 10%', needs: 0.6, wants: 0.3, savings: 0.1 },
-  { id: '70-20-10', name: '70/20/10', desc: 'Needs 70%, Wants 20%, Savings 10%', needs: 0.7, wants: 0.2, savings: 0.1 },
-  { id: '80-10-10', name: '80/10/10', desc: 'Needs 80%, Wants 10%, Savings 10%', needs: 0.8, wants: 0.1, savings: 0.1 },
+  { id: '50-25-25', name: '50/25/25', desc: 'Needs 50%, Wants 25%, Savings 25%', needs: 0.5, wants: 0.25, savings: 0.25 },
 ] as const
 
 export default function Goals() {
@@ -33,7 +28,11 @@ export default function Goals() {
   const start = format(startOfMonth(viewDate), 'yyyy-MM-dd')
   const end = format(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0), 'yyyy-MM-dd')
 
-  const { goals, addGoal, deleteGoal } = useBudgetGoals(viewMonth)
+  const prevDate = subMonths(viewDate, 1)
+  const prevMonth = format(prevDate, 'yyyy-MM')
+  const prevLabel = format(prevDate, 'MMMM')
+
+  const { goals, addGoal, deleteGoal, copyFromMonth } = useBudgetGoals(viewMonth)
   const { categories, categoriesByGroup } = useCategories()
   const { getMonthlyBudget, setMonthlyBudget, clearMonthlyBudgetOverride, customBlueprints, addCustomBlueprint, deleteCustomBlueprint, monthlyBudget: defaultBudget, setSetting, settings } = useSettings()
   const { transactions } = useTransactions(start, end)
@@ -182,136 +181,198 @@ export default function Goals() {
         <Button onClick={() => setShowModal(true)}>+ Add Goal</Button>
       </div>
 
-      {/* Monthly Budget Target */}
+      {/* Budget — monthly + default combined */}
       <Card>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-slate-400">
-            {format(viewDate, 'MMMM yyyy')} Budget
-          </h3>
-          <button
-            onClick={() => setEditBudget(!editBudget)}
-            className="text-xs text-green-400 hover:text-green-300"
-          >
-            {editBudget ? 'Cancel' : 'Edit'}
-          </button>
-        </div>
-        <p className="text-xs text-slate-500 mb-3">
-          Your total spending target for needs + wants this month. Powers the Dashboard health bar, remaining
-          balance, and over-budget alerts. Savings are tracked separately.
-        </p>
-        {editBudget ? (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <input
-                type="number"
-                value={budgetInput}
-                onChange={(e) => setBudgetInput(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2 pl-7 pr-4 text-slate-100 focus:border-green-500 focus:outline-none"
-              />
-            </div>
-            <Button onClick={handleSaveBudget}>Save</Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-slate-100">{formatCurrency(monthlyBudget)}</p>
-              {hasMonthOverride && (
-                <span className="text-xs text-slate-500">(custom for this month)</span>
-              )}
-            </div>
-            {hasMonthOverride && (
-              <button
-                onClick={() => clearMonthlyBudgetOverride(viewMonth)}
-                className="text-xs text-slate-500 hover:text-slate-300 shrink-0"
-              >
-                Reset to default
-              </button>
+        {/* Month row */}
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
+              {format(viewDate, 'MMMM yyyy')}
+            </p>
+            {editBudget ? (
+              <div className="flex gap-2 mt-1">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(e.target.value)}
+                    autoFocus
+                    className="w-40 rounded-xl border border-slate-700 bg-slate-800 py-2 pl-7 pr-4 text-xl font-bold text-slate-100 focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+                <Button size="sm" onClick={handleSaveBudget}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditBudget(false)}>Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-4xl font-bold text-slate-100 tracking-tight">
+                  {formatCurrency(monthlyBudget)}
+                </span>
+                {hasMonthOverride && (
+                  <span className="text-xs font-medium text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
+                    Custom
+                  </span>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </Card>
-
-      {/* Default Monthly Budget */}
-      <Card>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-slate-400">Default Budget</h3>
-          <button
-            onClick={() => setEditDefault(!editDefault)}
-            className="text-xs text-green-400 hover:text-green-300"
-          >
-            {editDefault ? 'Cancel' : 'Edit'}
-          </button>
+          {!editBudget && (
+            <button
+              onClick={() => setEditBudget(true)}
+              className="shrink-0 mt-0.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Edit
+            </button>
+          )}
         </div>
-        <p className="text-xs text-slate-500 mb-3">
-          Used for months without a custom amount. Edit a month above to override it for that period.{' '}
-          <Link to="/settings" className="text-green-400 hover:text-green-300">Also in Settings</Link>.
-        </p>
-        {editDefault ? (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <input
-                type="number"
-                value={defaultInput}
-                onChange={(e) => setDefaultInput(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2 pl-7 pr-4 text-slate-100 focus:border-green-500 focus:outline-none"
-              />
-            </div>
-            <Button onClick={handleSaveDefault}>Save</Button>
-          </div>
-        ) : (
-          <p className="text-2xl font-bold text-slate-100">{formatCurrency(defaultBudget)}</p>
+
+        {hasMonthOverride && !editBudget && (
+          <button
+            onClick={() => clearMonthlyBudgetOverride(viewMonth)}
+            className="text-xs text-slate-500 hover:text-slate-300 mt-1 transition-colors"
+          >
+            ↩ Reset to default
+          </button>
         )}
+
+        {/* Divider */}
+        <div className="border-t border-slate-800 my-4" />
+
+        {/* Default row */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
+              Default (all other months)
+            </p>
+            {editDefault ? (
+              <div className="flex gap-2 mt-1">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={defaultInput}
+                    onChange={(e) => setDefaultInput(e.target.value)}
+                    autoFocus
+                    className="w-36 rounded-xl border border-slate-700 bg-slate-800 py-1.5 pl-7 pr-4 text-lg font-bold text-slate-100 focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+                <Button size="sm" onClick={handleSaveDefault}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditDefault(false)}>Cancel</Button>
+              </div>
+            ) : (
+              <span className="text-2xl font-bold text-slate-400">
+                {formatCurrency(defaultBudget)}
+              </span>
+            )}
+          </div>
+          {!editDefault && (
+            <button
+              onClick={() => setEditDefault(true)}
+              className="shrink-0 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
       </Card>
 
       {/* Budget Blueprint */}
       <Card>
-        <h3 className="mb-2 text-sm font-medium text-slate-400">Budget Blueprint</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-medium text-slate-400">Budget Blueprint</h3>
+          <span className="text-xs text-slate-500">
+            Based on {formatCurrency(monthlyBudget)}
+          </span>
+        </div>
         <p className="text-xs text-slate-500 mb-4">
-          Apply preset percentages to {format(viewDate, 'MMMM')} using your{' '}
-          {hasMonthOverride ? 'custom' : 'default'} budget ({formatCurrency(monthlyBudget)}).
+          Pick a split to instantly set your group limits for {format(viewDate, 'MMMM')}.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {BUDGET_BLUEPRINTS.map((bp) => (
-            <button
-              key={bp.id}
-              onClick={() => applyBlueprint(bp)}
-              title={bp.desc}
-              className="flex flex-col items-start rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-left hover:border-slate-600 hover:bg-slate-800 transition-colors min-w-[150px]"
-            >
-              <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
-              <span className="text-xs text-slate-500">{bp.desc}</span>
-            </button>
-          ))}
-          {customBlueprints.map((bp) => {
-            const desc = `Needs ${Math.round(bp.needs * 100)}%, Wants ${Math.round(bp.wants * 100)}%, Savings ${Math.round(bp.savings * 100)}%`
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {[...BUDGET_BLUEPRINTS, ...customBlueprints].map((bp) => {
+            const isCustom = !('desc' in bp)
+            const needsAmt = Math.round(monthlyBudget * bp.needs)
+            const wantsAmt = Math.round(monthlyBudget * bp.wants)
+            const savingsAmt = Math.round(monthlyBudget * bp.savings)
             return (
               <div key={bp.id} className="relative group">
                 <button
                   onClick={() => applyBlueprint(bp)}
-                  title={desc}
-                  className="flex flex-col items-start rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-left hover:border-slate-600 hover:bg-slate-800 transition-colors min-w-[150px]"
+                  className="w-full flex flex-col rounded-xl border border-slate-700 bg-slate-800/40 p-3 text-left hover:border-slate-500 hover:bg-slate-800 transition-colors"
                 >
-                  <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
-                  <span className="text-xs text-slate-500">{desc}</span>
+                  {/* Name + badge */}
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-sm font-bold text-slate-100">{bp.name}</span>
+                    {isCustom && (
+                      <span className="text-[10px] font-medium text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full leading-none">
+                        Custom
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Segmented bar */}
+                  <div className="flex h-2 w-full overflow-hidden rounded-full gap-px mb-3">
+                    <div style={{ width: `${bp.needs * 100}%`, backgroundColor: '#eab308' }} className="rounded-l-full" />
+                    <div style={{ width: `${bp.wants * 100}%`, backgroundColor: '#f97316' }} />
+                    <div style={{ width: `${bp.savings * 100}%`, backgroundColor: '#3b82f6' }} className="rounded-r-full" />
+                  </div>
+
+                  {/* Per-group dollar + percent */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: '#eab308' }} />
+                        <span className="text-xs text-slate-400">Needs</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-medium text-slate-200">{formatCurrency(needsAmt)}</span>
+                        <span className="text-[10px] text-slate-500 ml-1">{Math.round(bp.needs * 100)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: '#f97316' }} />
+                        <span className="text-xs text-slate-400">Wants</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-medium text-slate-200">{formatCurrency(wantsAmt)}</span>
+                        <span className="text-[10px] text-slate-500 ml-1">{Math.round(bp.wants * 100)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: '#3b82f6' }} />
+                        <span className="text-xs text-slate-400">Savings</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-medium text-slate-200">{formatCurrency(savingsAmt)}</span>
+                        <span className="text-[10px] text-slate-500 ml-1">{Math.round(bp.savings * 100)}%</span>
+                      </div>
+                    </div>
+                  </div>
                 </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteCustomBlueprint(bp.id) }}
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-slate-700 text-slate-400 hover:bg-red-900/50 hover:text-red-400 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove"
-                >
-                  ×
-                </button>
+
+                {/* Delete button for custom blueprints */}
+                {isCustom && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteCustomBlueprint(bp.id) }}
+                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-700 text-slate-400 hover:bg-red-900/60 hover:text-red-400 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             )
           })}
+
+          {/* Add custom */}
           <button
             onClick={() => setShowBlueprintModal(true)}
-            className="flex flex-col items-start rounded-xl border border-green-500/50 bg-green-500/10 px-4 py-2.5 text-left text-green-400 hover:border-green-500 hover:bg-green-500/20 transition-colors min-w-[150px]"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-green-500/40 bg-green-500/5 p-3 text-green-400 hover:border-green-500/70 hover:bg-green-500/10 transition-colors min-h-[130px]"
           >
-            <span className="text-sm font-semibold">+ Add custom</span>
-            <span className="text-xs text-slate-500">Create your own split</span>
+            <span className="text-2xl leading-none">+</span>
+            <span className="text-xs font-medium">Custom split</span>
           </button>
         </div>
       </Card>
@@ -388,7 +449,14 @@ export default function Goals() {
 
       {/* Group-level goals */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">By Category Group</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">By Category Group</h2>
+          {goals.filter(g => g.group).length === 0 && (
+            <Button size="sm" variant="ghost" onClick={() => copyFromMonth(prevMonth)}>
+              Copy from {prevLabel}
+            </Button>
+          )}
+        </div>
         {BUDGET_GROUPS.map((group) => {
           const goal = goals.find((g) => g.group === group)
           const spent = groupSpending(group)
@@ -396,6 +464,9 @@ export default function Goals() {
           const ratio = limit > 0 ? spent / limit : 0
           const color = GROUP_COLORS[group]
           const isEditing = editingGroup === group
+          const groupCats = categoriesByGroup(group)
+            .filter(cat => (spending[cat.id!] || 0) > 0)
+            .sort((a, b) => (spending[b.id!] || 0) - (spending[a.id!] || 0))
 
           return (
             <Card
@@ -461,7 +532,7 @@ export default function Goals() {
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(ratio * 100, 100)}%`,
-                        backgroundColor: getHealthBarColor(ratio),
+                        backgroundColor: getHealthBarColor(group === 'savings' ? 1 - ratio : ratio),
                       }}
                     />
                   </div>
@@ -472,6 +543,28 @@ export default function Goals() {
                   </div>
                 )}
               </div>
+              {groupCats.length > 0 && !isEditing && (
+                <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-3">
+                  {groupCats.map(cat => {
+                    const catSpent = spending[cat.id!] || 0
+                    const catGoal = goals.find(g => g.categoryId === cat.id)
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <Icon name={cat.icon} size={13} className={getCategoryIconClassName(cat.group)} />
+                          <span className="text-xs text-slate-400 truncate">{cat.name}</span>
+                        </span>
+                        <span className="text-xs text-slate-300 shrink-0 tabular-nums">
+                          {formatCurrency(catSpent)}
+                          {catGoal && (
+                            <span className="text-slate-500"> / {formatCurrency(catGoal.monthlyLimit)}</span>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
               {goal?.id && !isEditing && (
                 <button
                   onClick={(e) => { e.stopPropagation(); goal.id && deleteGoal(goal.id) }}

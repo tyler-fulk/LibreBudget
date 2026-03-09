@@ -107,20 +107,57 @@ export default function Dashboard() {
         effectiveBudget={effectiveBudget}
       />
 
-      <SavingsTracker saved={savedThisMonth} budget={monthlyBudget} />
-
       <Card>
         <HealthBar spent={spendingExpenses} budget={effectiveBudget} saved={savedThisMonth} />
       </Card>
+
+      <SavingsTracker saved={savedThisMonth} budget={monthlyBudget} income={totalIncome} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card><CategoryDonut breakdown={groupBreakdown} /></Card>
         <Card><TopOffenders categorySpending={categorySpending} /></Card>
       </div>
 
+      {/* Recent transactions */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-slate-400">Recent Transactions</h3>
+          <Link to="/transactions" className="text-xs text-green-400 hover:text-green-300">View all</Link>
+        </div>
+        {transactions.length === 0 ? (
+          <p className="text-center text-sm text-slate-500 py-6">
+            No transactions yet.{' '}
+            <Link to="/add" className="text-green-400 hover:text-green-300">Add your first one</Link>
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {transactions.slice(0, 5).map((tx) => {
+              const cat = getCategoryById(tx.categoryId)
+              return (
+                <div key={tx.id} className="flex items-center gap-3 rounded-xl bg-slate-800/50 p-3">
+                  <Icon name={cat?.icon ?? 'Wallet'} size={20} className={cat ? getCategoryIconClassName(cat.group) : ''} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-200">
+                      {tx.description || cat?.name || 'Transaction'}
+                    </p>
+                    <p className="text-xs text-slate-500">{format(new Date(tx.date), 'MMM d')}</p>
+                  </div>
+                  <p className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Card>
+
       <FinancialHealthScore />
 
       <RoadmapWidget />
+
+      {/* Credit Score */}
+      <CreditWidget />
 
       {/* Forecast (current month only) */}
       {forecast && isCurrentMonth && (
@@ -159,48 +196,11 @@ export default function Dashboard() {
           </div>
           {!forecast.onTrack && (
             <p className="mt-2 text-xs text-red-400">
-              ⚠ On pace to exceed your {formatCurrency(monthlyBudget)} budget
+              ⚠ On pace to exceed your {formatCurrency(forecast.effectiveBudget)} spending budget
             </p>
           )}
         </Card>
       )}
-
-      {/* Credit Score */}
-      <CreditWidget />
-
-      {/* Recent transactions */}
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-slate-400">Recent Transactions</h3>
-          <Link to="/transactions" className="text-xs text-green-400 hover:text-green-300">View all</Link>
-        </div>
-        {transactions.length === 0 ? (
-          <p className="text-center text-sm text-slate-500 py-6">
-            No transactions yet.{' '}
-            <Link to="/add" className="text-green-400 hover:text-green-300">Add your first one</Link>
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {transactions.slice(0, 5).map((tx) => {
-              const cat = getCategoryById(tx.categoryId)
-              return (
-                <div key={tx.id} className="flex items-center gap-3 rounded-xl bg-slate-800/50 p-3">
-                  <Icon name={cat?.icon ?? 'Wallet'} size={20} className={cat ? getCategoryIconClassName(cat.group) : ''} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-200">
-                      {tx.description || cat?.name || 'Transaction'}
-                    </p>
-                    <p className="text-xs text-slate-500">{format(new Date(tx.date), 'MMM d')}</p>
-                  </div>
-                  <p className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
-                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </Card>
     </div>
   )
 }
