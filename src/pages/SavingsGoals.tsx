@@ -1,51 +1,13 @@
 import { useState } from 'react'
 import { format, differenceInDays } from 'date-fns'
 import { Card } from '../components/ui/Card'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useSavingsGoals } from '../hooks/useSavingsGoals'
 import { formatCurrency } from '../utils/calculations'
 import type { SavingsGoal } from '../db/database'
 import { Icon, GOAL_ICONS, ACCOUNT_ICONS } from '../components/ui/Icon'
-
-// ---------------------------------------------------------------------------
-// Shared toggle
-// ---------------------------------------------------------------------------
-
-function BudgetToggle({
-  value,
-  onChange,
-  label = 'Count as this month\'s savings contribution',
-  hint = 'Turn off if this money already existed and you\'re just recording it.',
-}: {
-  value: boolean
-  onChange: (v: boolean) => void
-  label?: string
-  hint?: string
-}) {
-  return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 space-y-1">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-slate-300">{label}</span>
-        <button
-          type="button"
-          onClick={() => onChange(!value)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-            value ? 'bg-blue-500' : 'bg-slate-600'
-          }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-              value ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
-      </div>
-      <p className="text-xs text-slate-500">{hint}</p>
-    </div>
-  )
-}
+import { BudgetToggle } from '../components/BudgetToggle'
 
 // ---------------------------------------------------------------------------
 // Cards
@@ -176,7 +138,6 @@ export default function SavingsGoals() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Savings</h1>
-            <EncryptionBadge />
           </div>
           <p className="text-sm text-slate-400">Accounts, goals & emergency funds</p>
         </div>
@@ -317,7 +278,7 @@ export default function SavingsGoals() {
       <Modal open={!!showFundModal} onClose={() => setShowFundModal(null)} title="Add Funds">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input
@@ -342,7 +303,7 @@ export default function SavingsGoals() {
       <Modal open={showModal === 'goal'} onClose={() => setShowModal(null)} title="New Savings Goal">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
             <div className="flex flex-wrap gap-1.5">
               {GOAL_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
@@ -353,13 +314,13 @@ export default function SavingsGoals() {
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Vacation Fund"
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Amount <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Amount</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={target} onChange={(e) => setTarget(e.target.value)}
@@ -368,7 +329,7 @@ export default function SavingsGoals() {
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Date <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Date</label>
             <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
           </div>
@@ -382,7 +343,7 @@ export default function SavingsGoals() {
       <Modal open={showModal === 'savings_account'} onClose={() => setShowModal(null)} title="Add Savings Account">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
             <div className="flex flex-wrap gap-1.5">
               {ACCOUNT_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
@@ -393,13 +354,13 @@ export default function SavingsGoals() {
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Chase Savings"
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={currentAmount} onChange={(e) => setCurrentAmount(e.target.value)}
@@ -423,7 +384,7 @@ export default function SavingsGoals() {
       <Modal open={showModal === 'emergency_fund'} onClose={() => setShowModal(null)} title="Add Emergency Fund">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
             <div className="flex flex-wrap gap-1.5">
               {ACCOUNT_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
@@ -434,13 +395,13 @@ export default function SavingsGoals() {
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Emergency Fund"
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Current Balance</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={currentAmount} onChange={(e) => setCurrentAmount(e.target.value)}

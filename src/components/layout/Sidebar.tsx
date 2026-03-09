@@ -32,7 +32,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-4">
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+            <p className="mb-1 px-4 text-[0.625rem] font-semibold uppercase tracking-widest text-slate-600">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -73,7 +73,7 @@ export function Sidebar() {
                     ? `Wait ${backupCooldown}s`
                     : 'Back Up Now'}
             </button>
-            <p className={`text-[10px] text-center ${isStale ? 'text-red-400 font-medium' : 'text-slate-500'}`}>
+            <p className={`text-[0.625rem] text-center ${isStale ? 'text-red-400 font-medium' : 'text-slate-500'}`}>
               {!passphraseSet
                 ? 'Encryption required'
                 : lastBackupAt 

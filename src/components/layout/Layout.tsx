@@ -1,8 +1,10 @@
 import { Outlet } from 'react-router-dom'
+import { useApplyAccessibilitySettings } from '../../hooks/useApplyAccessibilitySettings'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 
 export function Layout() {
+  useApplyAccessibilitySettings()
   return (
     <div className="flex min-h-screen bg-slate-950">
       <Sidebar />

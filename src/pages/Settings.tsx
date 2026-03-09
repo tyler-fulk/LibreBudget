@@ -1,12 +1,11 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useSettings } from '../hooks/useSettings'
 import { useCategories } from '../hooks/useCategories'
-import { useTheme } from '../hooks/useTheme'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
-import { useShowEncryptionIndicators } from '../hooks/useShowEncryptionIndicators'
+import { useTheme, THEMES } from '../hooks/useTheme'
 import { db, ALL_GROUPS, type CategoryGroup } from '../db/database'
 import { serializeDatabase, hydrateDatabase, type BackupPayload } from '../db/backup'
 import { GROUP_COLORS, GROUP_LABELS, getCategoryIconClassName } from '../utils/colors'
@@ -22,8 +21,10 @@ import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
 
 export default function Settings() {
   const {
-    trackingPeriod,
     notificationsEnabled,
+    reducedMotion,
+    strongFocusIndicators,
+    fontScale,
     getSetting,
     setSetting,
     monthlyBudget,
@@ -35,8 +36,7 @@ export default function Settings() {
     deleteCategory,
   } = useCategories()
 
-  const { theme, toggleTheme } = useTheme()
-  const { show: showEncryptionIndicators, toggle: toggleEncryptionIndicators } = useShowEncryptionIndicators()
+  const { theme, setTheme } = useTheme()
   const [exportStatus, setExportStatus] = useState('')
   const [importStatus, setImportStatus] = useState('')
   const [csvStatus, setCsvStatus] = useState('')
@@ -190,10 +190,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <EncryptionBadge />
-      </div>
+      <h1 className="text-2xl font-bold">Settings</h1>
 
       {/* Cloud Backup status */}
       {isCloudConfigured && (
@@ -234,68 +231,133 @@ export default function Settings() {
         </Card>
       )}
 
-      {/* Encryption indicators toggle */}
+      {/* Appearance */}
       <Card>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-slate-200">Encryption indicators</h3>
-            <p className="text-xs text-slate-500">
-              Show a lock icon next to fields that are encrypted before cloud backup
-            </p>
-          </div>
-          <button
-            onClick={toggleEncryptionIndicators}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${showEncryptionIndicators ? 'bg-green-600' : 'bg-slate-700'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${showEncryptionIndicators ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
+        <h3 className="mb-3 text-sm font-medium text-slate-200">Appearance</h3>
+        <div className="flex flex-wrap justify-between gap-3">
+          {THEMES.map((t) => {
+            const preview = {
+              black:     { outer: 'bg-black', bar: 'bg-[#262626]', inner: 'border-[#1a1a1a] bg-[#0a0a0a]', content: 'bg-[#1a1a1a]', accent: 'bg-green-600/60' },
+              dark:      { outer: 'bg-[#0a0a0a]', bar: 'bg-slate-700', inner: 'border-slate-800 bg-[#171717]', content: 'bg-slate-800', accent: 'bg-green-600/60' },
+              developer: { outer: 'bg-[#1e1e1e]', bar: 'bg-[#454545]', inner: 'border-[#3c3c3c] bg-[#252526]', content: 'bg-[#454545]', accent: 'bg-[#007acc]/70' },
+              monokai:   { outer: 'bg-[#282828]', bar: 'bg-[#505050]', inner: 'border-[#404040] bg-[#303030]', content: 'bg-[#505050]', accent: 'bg-[#a9dc76]/70' },
+              obsidian:  { outer: 'bg-[#1e1e1e]', bar: 'bg-[#3f3f3f]', inner: 'border-[#363636] bg-[#242424]', content: 'bg-[#3f3f3f]', accent: 'bg-[#a882ff]/70' },
+              ocean:     { outer: 'bg-[#0f172a]', bar: 'bg-slate-600', inner: 'border-slate-600 bg-[#1e293b]', content: 'bg-slate-600', accent: 'bg-cyan-500/50' },
+              purple:    { outer: 'bg-[#1e1b4b]', bar: 'bg-[#6366f1]', inner: 'border-[#4338ca] bg-[#312e81]', content: 'bg-[#4338ca]/60', accent: 'bg-[#a78bfa]/70' },
+              light:     { outer: 'bg-[#cbd5e1]', bar: 'bg-slate-400', inner: 'border-slate-400 bg-[#e2e8f0]', content: 'bg-slate-300', accent: 'bg-[#008526]/50' },
+            }[t]
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                aria-pressed={theme === t}
+                aria-label={`${t} theme`}
+                className={`max-w-[100px] flex-1 min-w-[80px] overflow-hidden rounded-xl border-2 transition-colors ${
+                  theme === t ? 'border-green-500 ring-2 ring-green-500/30' : 'border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <div className={`aspect-[5/3] flex flex-col p-1.5 ${preview.outer}`}>
+                  <div className={`mb-1 h-1 w-6 rounded ${preview.bar}`} />
+                  <div className={`flex-1 rounded border p-1.5 ${preview.inner}`}>
+                    <div className={`mb-1 h-1.5 w-3/4 rounded ${preview.bar}`} />
+                    <div className="space-y-0.5">
+                      <div className={`h-1 rounded ${preview.content}`} />
+                      <div className={`h-1 w-5/6 rounded ${preview.content}`} />
+                    </div>
+                    <div className="mt-1 flex gap-0.5">
+                      <div className={`h-2.5 flex-1 rounded ${preview.content}`} />
+                      <div className={`h-2.5 w-6 rounded ${preview.accent}`} />
+                    </div>
+                  </div>
+                </div>
+                <p className="py-1.5 text-center text-xs font-medium text-slate-400">{t === 'black' ? 'Black' : t === 'monokai' ? 'Monokai' : t.charAt(0).toUpperCase() + t.slice(1)}</p>
+              </button>
+            )
+          })}
         </div>
       </Card>
 
-      {/* Theme toggle */}
+      {/* Accessibility */}
       <Card>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-slate-200">Appearance</h3>
-            <p className="text-xs text-slate-500">Currently: {theme === 'dark' ? 'Dark' : 'Light'} mode</p>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className={`relative h-6 w-11 rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-700' : 'bg-green-600'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${theme === 'light' ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-        </div>
-      </Card>
-
-      {/* Tracking period */}
-      <Card>
-        <h3 className="mb-3 text-sm font-medium text-slate-400">
-          Tracking Period
-        </h3>
-        <div className="flex gap-2 rounded-xl bg-slate-800 p-1">
-          {(['monthly', 'weekly'] as const).map((period) => (
+        <h3 className="mb-3 text-sm font-medium text-slate-400">Accessibility</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-200">Reduce motion</p>
+              <p className="text-xs text-slate-500">
+                Disable animations and transitions
+              </p>
+            </div>
             <button
-              key={period}
-              onClick={() => setSetting('trackingPeriod', period)}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium capitalize transition-colors ${
-                trackingPeriod === period
-                  ? 'bg-green-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              type="button"
+              role="switch"
+              aria-checked={reducedMotion}
+              aria-label="Reduce motion"
+              onClick={() => setSetting('reducedMotion', reducedMotion ? 'false' : 'true')}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${reducedMotion ? 'bg-green-600' : 'bg-slate-700'}`}
             >
-              {period}
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${reducedMotion ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
-          ))}
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-200">Strong focus indicators</p>
+              <p className="text-xs text-slate-500">
+                Thicker focus rings for keyboard navigation
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={strongFocusIndicators}
+              aria-label="Strong focus indicators"
+              onClick={() => setSetting('strongFocusIndicators', strongFocusIndicators ? 'false' : 'true')}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${strongFocusIndicators ? 'bg-green-600' : 'bg-slate-700'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${strongFocusIndicators ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+          <div>
+            <p className="mb-2 text-sm text-slate-200">Font size</p>
+            <p className="mb-2 text-xs text-slate-500">
+              Scale text for readability
+            </p>
+            <div className="flex gap-2 rounded-xl bg-slate-800 p-1">
+              {(['normal', 'large', 'xlarge'] as const).map((scale) => (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => setSetting('fontScale', scale)}
+                  aria-pressed={fontScale === scale}
+                  aria-label={`Font size: ${scale}`}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-medium capitalize transition-colors ${
+                    fontScale === scale
+                      ? 'bg-green-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {scale === 'normal' ? 'Normal' : scale === 'large' ? 'Large' : 'Larger'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </Card>
 
       {/* Monthly budget */}
       <Card>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-400">
+        <h3 className="mb-2 text-sm font-medium text-slate-400">
           Monthly Budget Target
-          <EncryptionBadge />
         </h3>
+        <p className="text-xs text-slate-500 mb-3">
+          Your default spending target (needs + wants). Powers the Dashboard health bar, remaining balance,
+          and over-budget alerts.{' '}
+          <Link to="/goals" className="text-green-400 hover:text-green-300">
+            Set or override per month on Budget
+          </Link>
+          .
+        </p>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -350,6 +412,7 @@ export default function Settings() {
                           onClick={() => cat.id && handleDeleteCategory(cat.id)}
                           className="rounded p-1 text-slate-500 hover:bg-red-900/30 hover:text-red-400"
                           title="Delete custom category"
+                          aria-label={`Delete category ${cat.name}`}
                         >
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -373,7 +436,7 @@ export default function Settings() {
       >
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Group <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Group</label>
             <div className="grid grid-cols-2 gap-2">
               {ALL_GROUPS.map((g) => (
                 <button
@@ -397,7 +460,7 @@ export default function Settings() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Name</label>
             <input
               type="text"
               value={newCatName}
@@ -408,7 +471,7 @@ export default function Settings() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Icon</label>
             <div className="flex flex-wrap gap-1.5">
               {CATEGORY_ICONS.map((icon) => (
                 <button
@@ -450,6 +513,10 @@ export default function Settings() {
               </p>
             </div>
             <button
+              type="button"
+              role="switch"
+              aria-checked={notificationsEnabled}
+              aria-label="Enable daily reminder notifications"
               onClick={() =>
                 setSetting(
                   'notificationsEnabled',
@@ -471,9 +538,8 @@ export default function Settings() {
           {notificationsEnabled && (
             <>
               <div>
-                <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
+                <label className="mb-1 block text-sm text-slate-400">
                   Reminder Time
-                  <EncryptionBadge />
                 </label>
                 <input
                   type="time"
@@ -555,7 +621,7 @@ export default function Settings() {
       <Card>
         <h3 className="mb-2 text-sm font-medium text-slate-400">About</h3>
         <p className="text-sm text-slate-300">
-          <strong>LibreBudget</strong> v1.0.0
+          <strong>LibreBudget</strong> v1.1
         </p>
         <p className="mt-1 text-xs text-slate-500">
           Free, open-source budget tracker.

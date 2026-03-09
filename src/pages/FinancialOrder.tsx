@@ -1,4 +1,5 @@
 import { useFinancialOrder, type Step } from '../hooks/useFinancialOrder'
+import { useSettings } from '../hooks/useSettings'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Link } from 'react-router-dom'
@@ -10,10 +11,11 @@ const confettiMain = confetti.create(undefined, { useWorker: false, resize: true
 
 export default function FinancialOrder() {
   const { steps, toggleStep } = useFinancialOrder()
+  const { reducedMotion } = useSettings()
 
   const handleToggle = async (step: Step, e: React.ChangeEvent<HTMLInputElement>) => {
     const willComplete = !step.isComplete
-    if (willComplete) {
+    if (willComplete && !reducedMotion) {
       try {
         const rect = e.target.getBoundingClientRect()
         const x = (rect.left + rect.width / 2) / window.innerWidth

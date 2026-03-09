@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
@@ -109,7 +108,6 @@ export default function Transactions() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Transactions</h1>
-          <EncryptionBadge />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-400">{filtered.length} entries</span>
@@ -277,7 +275,6 @@ export default function Transactions() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Category
-              <EncryptionBadge />
             </label>
             <select
               value={editCategoryId ?? ''}
@@ -298,7 +295,6 @@ export default function Transactions() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Amount
-              <EncryptionBadge />
             </label>
             <input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
@@ -306,7 +302,6 @@ export default function Transactions() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Description
-              <EncryptionBadge />
             </label>
             <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
@@ -314,7 +309,6 @@ export default function Transactions() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Note
-              <EncryptionBadge />
             </label>
             <textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} rows={2}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none resize-none" />

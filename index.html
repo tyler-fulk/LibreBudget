@@ -2,12 +2,50 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/favicon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0a0a" />
-    <meta name="description" content="Free, open-source budget tracker" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.workers.dev https://librebudget.app https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
     <title>LibreBudget</title>
+    <meta name="description" content="LibreBudget is a free, open-source personal budget tracker. Track income and expenses, set budget goals, and monitor your financial health. Your data stays on your device." />
+    <meta name="keywords" content="budget tracker, personal finance, expense tracking, open source, free budget app" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://librebudget.app/" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/favicon-192.png" />
+
+    <!-- Open Graph / Link sharing preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://librebudget.app/" />
+    <meta property="og:title" content="LibreBudget – Free, Open-Source Budget Tracker" />
+    <meta property="og:description" content="Track income and expenses, set budget goals, and monitor your financial health. Your data stays on your device." />
+    <meta property="og:image" content="https://librebudget.app/icons/favicon-192.png" />
+    <meta property="og:image:width" content="192" />
+    <meta property="og:image:height" content="192" />
+    <meta property="og:site_name" content="LibreBudget" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="LibreBudget – Free, Open-Source Budget Tracker" />
+    <meta name="twitter:description" content="Track income and expenses, set budget goals, and monitor your financial health. Your data stays on your device." />
+    <meta name="twitter:image" content="https://librebudget.app/icons/favicon-192.png" />
+
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.workers.dev https://librebudget.app https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
+
+    <!-- JSON-LD structured data for search engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "LibreBudget",
+      "description": "Free, open-source personal budget tracker. Track income and expenses, set budget goals, and monitor your financial health. Your data stays on your device.",
+      "url": "https://librebudget.app/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web Browser",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>

@@ -5,7 +5,6 @@ import './index.css'
 import App from './App'
 import { WalletProvider } from './hooks/useWallet'
 import { ThemeProvider } from './hooks/useTheme'
-import { EncryptionIndicatorsProvider } from './hooks/useShowEncryptionIndicators'
 import { ToastProvider } from './components/ui/Toast'
 import { seedDatabase } from './db/seed'
 
@@ -16,11 +15,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ThemeProvider>
         <WalletProvider>
-          <EncryptionIndicatorsProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </EncryptionIndicatorsProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </WalletProvider>
       </ThemeProvider>
     </BrowserRouter>

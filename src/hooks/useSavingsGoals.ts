@@ -71,7 +71,12 @@ export function useSavingsGoals() {
     return db.savingsGoals.delete(id)
   }
 
-  const addFunds = async (id: number, amount: number, affectsBudget = true) => {
+  const addFunds = async (
+    id: number,
+    amount: number,
+    affectsBudget = true,
+    opts?: { date?: string; description?: string },
+  ) => {
     const goal = await db.savingsGoals.get(id)
     if (goal) {
       const sanitizedAmount = sanitizeAmount(amount)
@@ -84,13 +89,15 @@ export function useSavingsGoals() {
         const savingsCat = await db.categories.where('name').equals(catName).first()
           ?? (await db.categories.where('group').equals('savings').first())
         if (savingsCat?.id) {
+          const date = opts?.date ?? new Date().toISOString().slice(0, 10)
+          const description = opts?.description ?? `Contribution: ${goal.name}`
           await db.transactions.add({
             amount: sanitizedAmount,
             type: 'expense',
             categoryId: savingsCat.id,
-            description: `Contribution: ${goal.name}`,
+            description,
             note: '',
-            date: new Date().toISOString().slice(0, 10),
+            date,
             createdAt: new Date().toISOString(),
           })
         }

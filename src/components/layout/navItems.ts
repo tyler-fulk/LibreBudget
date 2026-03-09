@@ -29,6 +29,7 @@ export const navGroups: NavGroup[] = [
     label: 'Wealth',
     items: [
       { path: '/savings', icon: 'Building2', label: 'Savings' },
+      { path: '/calculator', icon: 'BarChart3', label: 'Calculators' },
       { path: '/debts', icon: 'TrendingDown', label: 'Debts' },
       { path: '/credit-score', icon: 'CreditCard', label: 'Credit Score' },
     ],

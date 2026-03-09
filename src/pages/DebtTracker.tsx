@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { Card } from '../components/ui/Card'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useDebts, calcRequiredPayment } from '../hooks/useDebts'
@@ -145,7 +144,6 @@ export default function DebtTracker() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Debt Tracker</h1>
-            <EncryptionBadge />
           </div>
           <p className="text-sm text-slate-400">Set payoff goals and track progress</p>
         </div>
@@ -308,7 +306,7 @@ export default function DebtTracker() {
       <Modal open={showModal} onClose={() => { setShowModal(false); resetForm() }} title={modalTitle}>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
             <div className="flex flex-wrap gap-1.5">
               {DEBT_ICONS.map((i) => (
                 <button key={i} onClick={() => setIcon(i)}
@@ -320,13 +318,13 @@ export default function DebtTracker() {
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Student Loan" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Balance <EncryptionBadge /></label>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Balance</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                 <input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}
@@ -334,13 +332,13 @@ export default function DebtTracker() {
               </div>
             </div>
             <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Interest Rate (%) <EncryptionBadge /></label>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Interest Rate (%)</label>
               <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)}
                 placeholder="0" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
           </div>
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Minimum Monthly Payment <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Minimum Monthly Payment</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" step="0.01" value={minPayment} onChange={(e) => setMinPayment(e.target.value)}
@@ -370,7 +368,7 @@ export default function DebtTracker() {
             </div>
             {icon === 'CreditCard' && (
               <div>
-                <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Annual Fee <EncryptionBadge /></label>
+                <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Annual Fee</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                   <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
@@ -396,7 +394,7 @@ export default function DebtTracker() {
       <Modal open={!!showPayment} onClose={() => setShowPayment(null)} title="Make Payment">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount <EncryptionBadge /></label>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount</label>
           </div>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>

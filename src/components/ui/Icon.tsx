@@ -51,6 +51,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Copy,
+  Pencil,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -108,6 +109,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ArrowUpRight,
   ArrowDownRight,
   Copy,
+  Pencil,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

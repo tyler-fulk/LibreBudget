@@ -22,6 +22,7 @@ import YearReview from './pages/YearReview'
 import CreditScore from './pages/CreditScore'
 
 import FinancialOrder from './pages/FinancialOrder'
+import Calculator from './pages/Calculator'
 
 export default function App() {
   useNotifications()
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/year-review" element={<YearReview />} />
           <Route path="/credit-score" element={<CreditScore />} />
+          <Route path="/calculator" element={<Calculator />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/account" element={<Account />} />
           <Route path="/generate-wallet" element={<GenerateWallet />} />

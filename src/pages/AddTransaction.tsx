@@ -1,31 +1,50 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Card } from '../components/ui/Card'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useCategories } from '../hooks/useCategories'
 import { useTransactions } from '../hooks/useTransactions'
-import { EXPENSE_GROUPS, type TransactionType, type CategoryGroup } from '../db/database'
+import { useSavingsGoals } from '../hooks/useSavingsGoals'
+import { EXPENSE_GROUPS, type CategoryGroup } from '../db/database'
 import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
 import { GROUP_LABELS, GROUP_COLORS, getCategoryIconClassName } from '../utils/colors'
+import { formatCurrency } from '../utils/calculations'
+import { BudgetToggle } from '../components/BudgetToggle'
+import type { SavingsGoal } from '../db/database'
+
+type TabType = 'expense' | 'income' | 'savings'
+
+const SAVINGS_TYPE_LABELS: Record<string, string> = {
+  emergency_fund: 'Emergency Fund',
+  savings_account: 'Savings Account',
+  goal: 'Goal',
+}
 
 export default function AddTransaction() {
   const navigate = useNavigate()
   const { categoriesByGroup } = useCategories()
   const { transactions, addTransaction } = useTransactions()
+  const { goals, addFunds } = useSavingsGoals()
 
-  const [type, setType] = useState<TransactionType>('expense')
+  const [type, setType] = useState<TabType>('expense')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [savingsGoalId, setSavingsGoalId] = useState<number | null>(null)
+  const [affectsBudget, setAffectsBudget] = useState(true)
   const [description, setDescription] = useState('')
   const [note, setNote] = useState('')
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [saving, setSaving] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState(false)
 
-  const activeGroups: CategoryGroup[] = type === 'expense' ? EXPENSE_GROUPS : ['income']
+  const savingsGoalsAvailable = goals.filter(
+    (g) => g.type !== 'goal' || g.currentAmount < g.targetAmount,
+  )
+
+  const activeGroups: CategoryGroup[] =
+    type === 'expense' ? EXPENSE_GROUPS : type === 'income' ? ['income'] : []
 
   const { addCategory } = useCategories()
   const [newCatGroup, setNewCatGroup] = useState<CategoryGroup | null>(null)
@@ -51,6 +70,7 @@ export default function AddTransaction() {
   }
 
   const isDuplicate = useMemo(() => {
+    if (type === 'savings') return false
     if (!amount || !categoryId) return false
     const amt = parseFloat(amount)
     return transactions.some(
@@ -60,6 +80,22 @@ export default function AddTransaction() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (type === 'savings') {
+      if (!amount || !savingsGoalId) return
+      setSaving(true)
+      await addFunds(savingsGoalId, parseFloat(amount), affectsBudget, {
+        date,
+        description: description.trim() || undefined,
+      })
+      setSaving(false)
+      setAmount('')
+      setSavingsGoalId(null)
+      setDescription('')
+      setNote('')
+      navigate('/transactions')
+      return
+    }
+
     if (!amount || !categoryId) return
 
     if (isDuplicate && !duplicateWarning) {
@@ -90,7 +126,6 @@ export default function AddTransaction() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-bold">Add Transaction</h1>
-        <EncryptionBadge />
       </div>
 
       <Card>
@@ -99,7 +134,7 @@ export default function AddTransaction() {
           <div className="flex gap-2 rounded-xl bg-slate-800 p-1">
             <button
               type="button"
-              onClick={() => { setType('expense'); setCategoryId(null) }}
+              onClick={() => { setType('expense'); setCategoryId(null); setSavingsGoalId(null); setNewCatGroup(null) }}
               className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
                 type === 'expense'
                   ? 'bg-orange-600 text-white'
@@ -110,7 +145,7 @@ export default function AddTransaction() {
             </button>
             <button
               type="button"
-              onClick={() => { setType('income'); setCategoryId(null) }}
+              onClick={() => { setType('income'); setCategoryId(null); setSavingsGoalId(null); setNewCatGroup(null) }}
               className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
                 type === 'income'
                   ? 'bg-green-600 text-white'
@@ -119,13 +154,23 @@ export default function AddTransaction() {
             >
               Income
             </button>
+            <button
+              type="button"
+              onClick={() => { setType('savings'); setCategoryId(null); setSavingsGoalId(null); setNewCatGroup(null) }}
+              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+                type === 'savings'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Savings
+            </button>
           </div>
 
           {/* Amount */}
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
               Amount
-              <EncryptionBadge />
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -144,69 +189,120 @@ export default function AddTransaction() {
             </div>
           </div>
 
-          {/* Category */}
-          <div>
-            <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
-              Category
-              <EncryptionBadge />
-            </label>
-            <div className="space-y-3">
-              {activeGroups.map((group) => {
-                const cats = categoriesByGroup(group)
-                return (
-                  <div key={group}>
-                    {activeGroups.length > 1 && (
-                      <p
-                        className="mb-1.5 text-xs font-semibold uppercase tracking-wider"
-                        style={{ color: GROUP_COLORS[group] }}
-                      >
-                        {GROUP_LABELS[group]}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {cats.map((cat) => {
-                        const selected = categoryId === cat.id
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setCategoryId(cat.id!)}
-                            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                              selected
-                                ? 'border-transparent text-white'
-                                : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
-                            }`}
-                            style={selected ? { backgroundColor: GROUP_COLORS[cat.group] } : undefined}
-                          >
-                            <Icon
-                              name={cat.icon}
-                              size={16}
-                              className={selected ? '' : getCategoryIconClassName(cat.group)}
-                            />
-                            {cat.name}
-                          </button>
-                        )
-                      })}
+          {/* Category (Expense/Income) or Account selector (Savings) */}
+          {type === 'savings' ? (
+            <div>
+              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
+                Savings account / goal
+              </label>
+              {savingsGoalsAvailable.length === 0 ? (
+                <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-center">
+                  <p className="text-sm text-slate-400 mb-2">
+                    No savings accounts yet. Add one in Savings first.
+                  </p>
+                  <Link
+                    to="/savings"
+                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                  >
+                    Go to Savings →
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {savingsGoalsAvailable.map((goal: SavingsGoal) => {
+                    const id = goal.id!
+                    const selected = savingsGoalId === id
+                    return (
                       <button
+                        key={id}
                         type="button"
-                        onClick={() => { setNewCatGroup(group); setNewCatName(''); setNewCatIcon('Wallet') }}
-                        className="flex items-center gap-1 rounded-lg border border-dashed border-slate-600 px-3 py-1.5 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-300 transition-colors"
+                        onClick={() => setSavingsGoalId(id)}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors text-left ${
+                          selected
+                            ? 'border-transparent text-white'
+                            : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
+                        }`}
+                        style={selected ? { backgroundColor: GROUP_COLORS.savings } : undefined}
                       >
-                        <Icon name="Plus" size={14} />
-                        New
+                        <Icon
+                          name={goal.icon}
+                          size={18}
+                          className={selected ? '' : 'text-blue-400'}
+                        />
+                        <div className="flex flex-col items-start">
+                          <span>{goal.name}</span>
+                          <span className="text-xs opacity-80">
+                            {SAVINGS_TYPE_LABELS[goal.type]} · {formatCurrency(goal.currentAmount)}
+                          </span>
+                        </div>
                       </button>
-                    </div>
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
+                Category
+              </label>
+              <div className="space-y-3">
+                {activeGroups.map((group) => {
+                  const cats = categoriesByGroup(group)
+                  return (
+                    <div key={group}>
+                      {activeGroups.length > 1 && (
+                        <p
+                          className="mb-1.5 text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: GROUP_COLORS[group] }}
+                        >
+                          {GROUP_LABELS[group]}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {cats.map((cat) => {
+                          const selected = categoryId === cat.id
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setCategoryId(cat.id!)}
+                              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                selected
+                                  ? 'border-transparent text-white'
+                                  : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
+                              }`}
+                              style={selected ? { backgroundColor: GROUP_COLORS[cat.group] } : undefined}
+                            >
+                              <Icon
+                                name={cat.icon}
+                                size={16}
+                                className={selected ? '' : getCategoryIconClassName(cat.group)}
+                              />
+                              {cat.name}
+                            </button>
+                          )
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => { setNewCatGroup(group); setNewCatName(''); setNewCatIcon('Wallet') }}
+                          className="flex items-center gap-1 rounded-lg border border-dashed border-slate-600 px-3 py-1.5 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-300 transition-colors"
+                        >
+                          <Icon name="Plus" size={14} />
+                          New
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
               Description
-              <EncryptionBadge />
             </label>
             <input
               type="text"
@@ -221,7 +317,6 @@ export default function AddTransaction() {
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
               Note <span className="text-slate-600 font-normal">(optional)</span>
-              <EncryptionBadge />
             </label>
             <textarea
               value={note}
@@ -236,7 +331,6 @@ export default function AddTransaction() {
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
               Date
-              <EncryptionBadge />
             </label>
             <input
               type="date"
@@ -246,8 +340,13 @@ export default function AddTransaction() {
             />
           </div>
 
-          {/* Duplicate warning */}
-          {duplicateWarning && (
+          {/* Budget toggle (Savings only) */}
+          {type === 'savings' && (
+            <BudgetToggle value={affectsBudget} onChange={setAffectsBudget} />
+          )}
+
+          {/* Duplicate warning (Expense/Income only) */}
+          {type !== 'savings' && duplicateWarning && (
             <div className="rounded-xl border border-yellow-700 bg-yellow-900/20 p-3 text-sm text-yellow-300">
               <Icon name="AlertTriangle" size={18} className="inline mr-1 align-middle" /> A similar transaction already exists on this date. Submit again to confirm.
             </div>
@@ -257,9 +356,19 @@ export default function AddTransaction() {
             type="submit"
             size="lg"
             className="w-full"
-            disabled={!amount || !categoryId || saving}
+            disabled={
+              !amount ||
+              saving ||
+              (type === 'savings' ? !savingsGoalId || savingsGoalsAvailable.length === 0 : !categoryId)
+            }
           >
-            {saving ? 'Saving...' : duplicateWarning ? 'Add Anyway' : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
+            {saving
+              ? 'Saving...'
+              : type === 'savings'
+                ? 'Add to Savings'
+                : duplicateWarning
+                  ? 'Add Anyway'
+                  : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
           </Button>
         </form>
       </Card>

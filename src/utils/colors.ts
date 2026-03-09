@@ -19,7 +19,7 @@ export const GROUP_LABELS: Record<CategoryGroup, string> = {
   income: 'Income',
 }
 
-export function getHealthBarColor(ratio: number, theme?: 'dark' | 'light'): string {
+export function getHealthBarColor(ratio: number, theme?: string): string {
   if (ratio <= 0.5) return theme === 'light' ? '#008526' : '#22c55e'
   if (ratio <= 0.75) return '#eab308'
   if (ratio <= 0.9) return '#f97316'

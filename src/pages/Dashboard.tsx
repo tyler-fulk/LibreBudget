@@ -113,6 +113,11 @@ export default function Dashboard() {
         <HealthBar spent={spendingExpenses} budget={effectiveBudget} saved={savedThisMonth} />
       </Card>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card><CategoryDonut breakdown={groupBreakdown} /></Card>
+        <Card><TopOffenders categorySpending={categorySpending} /></Card>
+      </div>
+
       <FinancialHealthScore />
 
       <RoadmapWidget />
@@ -159,11 +164,6 @@ export default function Dashboard() {
           )}
         </Card>
       )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card><CategoryDonut breakdown={groupBreakdown} /></Card>
-        <Card><TopOffenders categorySpending={categorySpending} /></Card>
-      </div>
 
       {/* Credit Score */}
       <CreditWidget />

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { Card } from '../components/ui/Card'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useRecurringTransactions } from '../hooks/useRecurringTransactions'
@@ -60,7 +59,6 @@ export default function Recurring() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Recurring</h1>
-            <EncryptionBadge />
           </div>
           <p className="text-sm text-slate-400">Auto-logged transactions</p>
         </div>
@@ -169,7 +167,7 @@ export default function Recurring() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Amount <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Amount</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input
@@ -181,7 +179,7 @@ export default function Recurring() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Category <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Category</label>
             <select
               value={categoryId ?? ''}
               onChange={(e) => setCategoryId(Number(e.target.value))}
@@ -197,7 +195,7 @@ export default function Recurring() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Description <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Description</label>
             <input
               type="text" value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Netflix, Rent, Salary"
@@ -206,7 +204,7 @@ export default function Recurring() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Frequency <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Frequency</label>
             <select
               value={interval} onChange={(e) => setInterval(e.target.value as RecurrenceInterval)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none"
@@ -218,7 +216,7 @@ export default function Recurring() {
           </div>
 
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Next Due Date <EncryptionBadge /></label>
+            <label className="mb-1 block text-sm text-slate-400">Next Due Date</label>
             <input
               type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none"

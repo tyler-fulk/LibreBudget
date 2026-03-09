@@ -48,7 +48,6 @@ export async function seedDatabase() {
   const settingsCount = await db.settings.count()
   if (settingsCount === 0) {
     await db.settings.bulkAdd([
-      { key: 'trackingPeriod', value: 'monthly' },
       { key: 'notificationsEnabled', value: 'true' },
       { key: 'notificationTime', value: '20:00' },
       { key: 'monthlyBudget', value: '3000' },

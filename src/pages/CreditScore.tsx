@@ -6,7 +6,6 @@ import {
 } from 'recharts'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { EncryptionBadge } from '../components/ui/EncryptionBadge'
 import { Modal } from '../components/ui/Modal'
 import { useCreditScores } from '../hooks/useCreditScores'
 
@@ -68,7 +67,6 @@ export default function CreditScore() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Credit Score</h1>
-            <EncryptionBadge />
           </div>
           <p className="text-sm text-slate-400">Track your credit over time</p>
         </div>
@@ -235,7 +233,6 @@ export default function CreditScore() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Score (300–850)
-              <EncryptionBadge />
             </label>
             <input
               type="number" min="300" max="850" value={score}
@@ -251,7 +248,6 @@ export default function CreditScore() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Source
-              <EncryptionBadge />
             </label>
             <select value={source} onChange={(e) => setSource(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none">
@@ -261,7 +257,6 @@ export default function CreditScore() {
           <div>
             <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
               Date
-              <EncryptionBadge />
             </label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
