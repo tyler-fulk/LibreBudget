@@ -18,6 +18,8 @@ import {
   getNotificationPermission,
 } from '../utils/notifications'
 import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
+import { Onboarding } from '../components/Onboarding'
+import { AccountOnboarding } from '../components/AccountOnboarding'
 
 export default function Settings() {
   const {
@@ -39,6 +41,8 @@ export default function Settings() {
   const { theme, setTheme } = useTheme()
   const [exportStatus, setExportStatus] = useState('')
   const [importStatus, setImportStatus] = useState('')
+  const [showAppTour, setShowAppTour] = useState(false)
+  const [showAccountTour, setShowAccountTour] = useState(false)
   const [csvStatus, setCsvStatus] = useState('')
   const [permissionState, setPermissionState] = useState(
     getNotificationPermission(),
@@ -619,14 +623,43 @@ export default function Settings() {
 
       {/* About */}
       <Card>
-        <h3 className="mb-2 text-sm font-medium text-slate-400">About</h3>
+        <h3 className="mb-3 text-sm font-medium text-slate-400">About</h3>
         <p className="text-sm text-slate-300">
           <strong>LibreBudget</strong> v1.1
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 mb-4 text-xs text-slate-500">
           Free, open-source budget tracker.
         </p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowAppTour(true)}
+            className="flex items-center gap-3 rounded-xl bg-slate-800 px-4 py-3 text-left transition-colors hover:bg-slate-700 active:bg-slate-700"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-600/15">
+              <Icon name="Map" size={15} className="text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-200">Replay App Tour</p>
+              <p className="text-xs text-slate-500">Re-watch the intro walkthrough</p>
+            </div>
+          </button>
+          <button
+            onClick={() => setShowAccountTour(true)}
+            className="flex items-center gap-3 rounded-xl bg-slate-800 px-4 py-3 text-left transition-colors hover:bg-slate-700 active:bg-slate-700"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/15">
+              <Icon name="Cloud" size={15} className="text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-200">Replay Account &amp; Sync Tour</p>
+              <p className="text-xs text-slate-500">Learn about vaults, backup, and syncing</p>
+            </div>
+          </button>
+        </div>
       </Card>
+
+      <Onboarding open={showAppTour} onClose={() => setShowAppTour(false)} />
+      <AccountOnboarding open={showAccountTour} onClose={() => setShowAccountTour(false)} />
     </div>
   )
 }

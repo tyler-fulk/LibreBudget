@@ -59,6 +59,8 @@ import {
   RefreshCw,
   WifiOff,
   Key,
+  CloudDownload,
+  CloudUpload,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -124,6 +126,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   RefreshCw,
   WifiOff,
   Key,
+  CloudDownload,
+  CloudUpload,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

@@ -5,6 +5,7 @@ import { Menu, X, ChevronRight } from 'lucide-react'
 import { navGroups, navItems } from './navItems'
 import { useCloudBackup } from '../../hooks/useCloudBackup'
 import { Icon } from '../ui/Icon'
+import { SyncModal } from '../SyncModal'
 
 const PRIMARY_PATHS = ['/', '/transactions', '/add', '/goals']
 const PRIMARY_ITEMS = PRIMARY_PATHS.map((p) => navItems.find((n) => n.path === p)!)
@@ -26,6 +27,7 @@ function pillPos(index: number) {
 
 export function BottomNav() {
   const [open, setOpen] = useState(false)
+  const [syncOpen, setSyncOpen] = useState(false)
   const location = useLocation()
   const menuRef = useRef<HTMLDivElement>(null)
   const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet, enabled } = useCloudBackup()
@@ -80,6 +82,7 @@ export function BottomNav() {
 
   return (
     <div ref={menuRef} className="md:hidden">
+      <SyncModal open={syncOpen} onClose={() => setSyncOpen(false)} />
       {open && (
         <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} />
       )}
@@ -120,43 +123,52 @@ export function BottomNav() {
             {enabled && (
               <>
                 <div className="border-t border-slate-800 -mx-2" />
-                <button
-                  onClick={() => backupNow()}
-                  disabled={isBacking || backupCooldown > 0 || !passphraseSet}
-                  className="flex w-full items-center gap-3 rounded-xl bg-slate-800 px-3 py-2.5 text-left transition-colors active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {/* Icon badge */}
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                    !passphraseSet ? 'bg-slate-700' : isStale ? 'bg-amber-500/15' : 'bg-green-600/15'
-                  }`}>
-                    <Icon
-                      name={isBacking ? 'RefreshCw' : !passphraseSet ? 'Lock' : 'CloudUpload'}
-                      size={17}
-                      className={`transition-colors ${
-                        isBacking ? 'animate-spin text-green-400' : !passphraseSet ? 'text-slate-500' : isStale ? 'text-amber-400' : 'text-green-400'
-                      }`}
-                    />
-                  </div>
+                <div className="flex gap-1.5">
+                  {/* Back Up Now */}
+                  <button
+                    onClick={() => backupNow()}
+                    disabled={isBacking || backupCooldown > 0 || !passphraseSet}
+                    className="flex flex-1 items-center gap-3 rounded-xl bg-slate-800 px-3 py-2.5 text-left transition-colors active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                      !passphraseSet ? 'bg-slate-700' : isStale ? 'bg-amber-500/15' : 'bg-green-600/15'
+                    }`}>
+                      <Icon
+                        name={isBacking ? 'RefreshCw' : !passphraseSet ? 'Lock' : 'CloudUpload'}
+                        size={17}
+                        className={`transition-colors ${
+                          isBacking ? 'animate-spin text-green-400' : !passphraseSet ? 'text-slate-500' : isStale ? 'text-amber-400' : 'text-green-400'
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold leading-tight text-slate-200">
+                        {isBacking ? 'Backing up…' : !passphraseSet ? 'Set Encryption Key' : backupCooldown > 0 ? `Wait ${backupCooldown}s` : 'Back Up Now'}
+                      </p>
+                      <p className={`mt-0.5 text-[10px] leading-tight truncate ${isStale ? 'text-amber-400/80' : 'text-slate-500'}`}>
+                        {!passphraseSet
+                          ? 'Encryption key required'
+                          : lastBackupAt
+                            ? formatDistanceToNow(new Date(lastBackupAt), { addSuffix: true }).replace('about ', '')
+                            : 'No backup yet'}
+                      </p>
+                    </div>
+                    {!isBacking && passphraseSet && backupCooldown === 0 && (
+                      <ChevronRight size={14} className="shrink-0 text-slate-600" />
+                    )}
+                  </button>
 
-                  {/* Label + subtitle */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold leading-tight text-slate-200">
-                      {isBacking ? 'Backing up…' : !passphraseSet ? 'Set Encryption Key' : backupCooldown > 0 ? `Wait ${backupCooldown}s` : 'Back Up Now'}
-                    </p>
-                    <p className={`mt-0.5 text-[10px] leading-tight truncate ${isStale ? 'text-amber-400/80' : 'text-slate-500'}`}>
-                      {!passphraseSet
-                        ? 'Encryption key required'
-                        : lastBackupAt
-                          ? formatDistanceToNow(new Date(lastBackupAt), { addSuffix: true }).replace('about ', '')
-                          : 'No backup yet'}
-                    </p>
-                  </div>
-
-                  {/* Trailing chevron when actionable */}
-                  {!isBacking && passphraseSet && backupCooldown === 0 && (
-                    <ChevronRight size={14} className="shrink-0 text-slate-600" />
-                  )}
-                </button>
+                  {/* Sync from Cloud */}
+                  <button
+                    onClick={() => { setOpen(false); setSyncOpen(true) }}
+                    disabled={!passphraseSet}
+                    title="Sync (restore) from cloud backup"
+                    className="flex flex-col items-center justify-center gap-1 rounded-xl bg-slate-800 px-5 py-2.5 transition-colors active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Icon name="CloudDownload" size={17} className="text-blue-400" />
+                    <span className="text-[9px] font-medium text-slate-400 whitespace-nowrap">Sync</span>
+                  </button>
+                </div>
               </>
             )}
           </div>

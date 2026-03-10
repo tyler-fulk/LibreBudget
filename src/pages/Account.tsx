@@ -35,6 +35,7 @@ export default function Account() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   if (!BACKUP_API_URL) {
     return (
@@ -128,9 +129,18 @@ export default function Account() {
 
   return (
     <>
-      <AccountOnboarding />
+      <AccountOnboarding open={showTutorial} onClose={() => setShowTutorial(false)} />
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Account</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Account</h1>
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+            title="View account tutorial"
+          >
+            <span className="text-sm font-bold">?</span>
+          </button>
+        </div>
 
         {/* Vault hero card */}
         <Card className="overflow-hidden !p-0">

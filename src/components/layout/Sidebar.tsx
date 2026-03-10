@@ -4,12 +4,14 @@ import { formatDistanceToNow } from 'date-fns'
 import { navGroups } from './navItems'
 import { useCloudBackup } from '../../hooks/useCloudBackup'
 import { Icon } from '../ui/Icon'
+import { SyncModal } from '../SyncModal'
 import logoSrc from '../../../img/192w.png'
 import logoSrc512 from '../../../img/512w.png'
 
 export function Sidebar() {
   const { backupNow, isBacking, backupCooldown, lastBackupAt, passphraseSet, enabled } = useCloudBackup()
   const [now, setNow] = useState(Date.now())
+  const [syncOpen, setSyncOpen] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 60000) // Update every minute
@@ -19,6 +21,8 @@ export function Sidebar() {
   const isStale = lastBackupAt && (now - new Date(lastBackupAt).getTime() > 5 * 60 * 1000)
 
   return (
+    <>
+    <SyncModal open={syncOpen} onClose={() => setSyncOpen(false)} />
     <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-slate-800 bg-slate-900 md:flex md:flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-slate-800 px-6 py-4">
         <img
@@ -59,25 +63,35 @@ export function Sidebar() {
       <div className="shrink-0 border-t border-slate-800 p-4 space-y-2">
         {enabled && (
           <div className="space-y-1">
-            <button
-              onClick={() => backupNow()}
-              disabled={isBacking || backupCooldown > 0 || !passphraseSet}
-              title={!passphraseSet ? 'Create or restore vault in Account first' : undefined}
-              className="w-full rounded-lg bg-slate-800 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isBacking
-                ? 'Backing up...'
-                : !passphraseSet
-                  ? 'Set Passphrase'
-                  : backupCooldown > 0
-                    ? `Wait ${backupCooldown}s`
-                    : 'Back Up Now'}
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => backupNow()}
+                disabled={isBacking || backupCooldown > 0 || !passphraseSet}
+                title={!passphraseSet ? 'Create or restore vault in Account first' : undefined}
+                className="flex-1 rounded-lg bg-slate-800 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isBacking
+                  ? 'Backing up...'
+                  : !passphraseSet
+                    ? 'Set Passphrase'
+                    : backupCooldown > 0
+                      ? `Wait ${backupCooldown}s`
+                      : 'Back Up Now'}
+              </button>
+              <button
+                onClick={() => setSyncOpen(true)}
+                disabled={!passphraseSet}
+                title="Sync (restore) from cloud backup"
+                className="flex items-center justify-center rounded-lg bg-slate-800 px-2.5 py-2 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Icon name="RefreshCw" size={13} />
+              </button>
+            </div>
             <p className={`text-[0.625rem] text-center ${isStale ? 'text-red-400 font-medium' : 'text-slate-500'}`}>
               {!passphraseSet
                 ? 'Encryption required'
-                : lastBackupAt 
-                  ? `Last backup: ${formatDistanceToNow(new Date(lastBackupAt), { addSuffix: true })}` 
+                : lastBackupAt
+                  ? `Last backup: ${formatDistanceToNow(new Date(lastBackupAt), { addSuffix: true })}`
                   : 'No backup yet'}
             </p>
           </div>
@@ -98,5 +112,6 @@ export function Sidebar() {
         <p className="text-xs text-slate-500">LibreBudget v1.1</p>
       </div>
     </aside>
+    </>
   )
 }

@@ -17,6 +17,45 @@ import { VaultLockScreen } from '../components/VaultLockScreen'
 
 const SESSION_STORAGE_KEY = 'lb-vault-session'
 const PERSIST_STORAGE_KEY = 'lb-vault-persist'
+const FAIL_COUNT_KEY = 'lb-vault-fail-count'
+const LOCKOUT_KEY = 'lb-vault-lockout-until'
+
+/** Consecutive failures required to trigger each lockout tier */
+const LOCKOUT_SCHEDULE: { attempts: number; durationMs: number }[] = [
+  { attempts: 3, durationMs: 30_000 },           // 30 s after 3rd failure
+  { attempts: 5, durationMs: 5 * 60_000 },       // 5 min after 5th
+  { attempts: 7, durationMs: 30 * 60_000 },      // 30 min after 7th
+]
+/** After this many failures the lockout becomes permanent until recovery phrase is used */
+export const PIN_MAX_ATTEMPTS = 10
+
+export function getPinLockoutStatus(): {
+  isLockedOut: boolean
+  isPermanent: boolean
+  secondsRemaining: number
+  failCount: number
+} {
+  const failCount = parseInt(localStorage.getItem(FAIL_COUNT_KEY) ?? '0', 10)
+  const lockoutUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) ?? '0', 10)
+  const isPermanent = failCount >= PIN_MAX_ATTEMPTS
+  const secondsRemaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000))
+  const isLockedOut = isPermanent || Date.now() < lockoutUntil
+  return { isLockedOut, isPermanent, secondsRemaining, failCount }
+}
+
+function recordPinFailure(): void {
+  const count = parseInt(localStorage.getItem(FAIL_COUNT_KEY) ?? '0', 10) + 1
+  localStorage.setItem(FAIL_COUNT_KEY, String(count))
+  const tier = [...LOCKOUT_SCHEDULE].reverse().find((s) => count >= s.attempts)
+  if (tier) {
+    localStorage.setItem(LOCKOUT_KEY, String(Date.now() + tier.durationMs))
+  }
+}
+
+function clearPinFailures(): void {
+  localStorage.removeItem(FAIL_COUNT_KEY)
+  localStorage.removeItem(LOCKOUT_KEY)
+}
 
 export interface WalletKeys {
   anonymousId: string
@@ -96,10 +135,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const unlockWithPin = useCallback(async (pin: string): Promise<boolean> => {
+    // Reject immediately if locked out — no crypto work performed
+    const { isLockedOut } = getPinLockoutStatus()
+    if (isLockedOut) return false
+
     const blob = localStorage.getItem(PERSIST_STORAGE_KEY)
     if (!blob) return false
     try {
       const keys = await decryptVaultWithPin(blob, pin)
+      clearPinFailures()
       setWalletState(keys)
       setIsLocked(false)
       const keyBase64 = await exportKeyForSession(keys.encryptionKey)
@@ -109,6 +153,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       )
       return true
     } catch {
+      recordPinFailure()
       return false
     }
   }, [])
@@ -120,6 +165,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const forgetPersistedVault = useCallback(() => {
     localStorage.removeItem(PERSIST_STORAGE_KEY)
+    clearPinFailures()
     setIsLocked(false)
   }, [])
 
@@ -130,6 +176,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(PERSIST_STORAGE_KEY)
     localStorage.removeItem('lb_last_backup_at')
     localStorage.removeItem('lb_last_manual_backup')
+    clearPinFailures()
     try {
       await db.transaction(
         'rw',
