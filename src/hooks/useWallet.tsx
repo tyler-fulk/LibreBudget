@@ -25,7 +25,7 @@ export interface WalletKeys {
 
 interface WalletState {
   wallet: WalletKeys | null
-  setWallet: (keys: WalletKeys) => void
+  setWallet: (keys: WalletKeys) => Promise<void>
   clearWallet: () => Promise<void>
   hasWallet: boolean
   isLocked: boolean
@@ -37,7 +37,7 @@ interface WalletState {
 
 const WalletContext = createContext<WalletState>({
   wallet: null,
-  setWallet: () => {},
+  setWallet: async () => {},
   clearWallet: async () => {},
   hasWallet: false,
   isLocked: false,
@@ -128,6 +128,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setIsLocked(false)
     sessionStorage.removeItem(SESSION_STORAGE_KEY)
     localStorage.removeItem(PERSIST_STORAGE_KEY)
+    localStorage.removeItem('lb_last_backup_at')
+    localStorage.removeItem('lb_last_manual_backup')
     try {
       await db.transaction(
         'rw',

@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { EXPENSE_GROUPS, type CategoryGroup } from '../../db/database'
 import { GROUP_COLORS, GROUP_LABELS } from '../../utils/colors'
 import { formatCurrency } from '../../utils/calculations'
@@ -6,6 +6,12 @@ import { formatCurrency } from '../../utils/calculations'
 interface CategoryDonutProps {
   breakdown: Record<CategoryGroup, number>
 }
+
+// Fixed chart dimensions — avoids ResponsiveContainer's ResizeObserver
+// firing with conflicting sizes on mobile (common Recharts mobile bug).
+const CHART_SIZE = 160
+const INNER_R = 42
+const OUTER_R = 64
 
 export function CategoryDonut({ breakdown }: CategoryDonutProps) {
   const data = EXPENSE_GROUPS
@@ -24,8 +30,11 @@ export function CategoryDonut({ breakdown }: CategoryDonutProps) {
 
   if (total === 0) {
     return (
-      <div className="flex h-52 items-center justify-center text-slate-500">
-        No expenses yet this period
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-slate-400">Spending Breakdown</h3>
+        <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+          No expenses yet this period
+        </div>
       </div>
     )
   }
@@ -33,55 +42,48 @@ export function CategoryDonut({ breakdown }: CategoryDonutProps) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-slate-400">Spending Breakdown</h3>
-      <div className="flex items-center gap-4">
-        <div className="h-44 w-44 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={withPct}
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={70}
-                paddingAngle={3}
-                dataKey="value"
-                strokeWidth={0}
-              >
-                {withPct.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.[0]) return null
-                  const d = payload[0].payload
-                  return (
-                    <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm shadow-xl">
-                      <p className="font-medium" style={{ color: d.color }}>
-                        {d.name}
-                      </p>
-                      <p className="text-slate-300">{formatCurrency(d.value)}</p>
-                    </div>
-                  )
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-2 flex-1">
-          {withPct.map((d) => (
-            <div key={d.name} className="flex items-center gap-2">
-              <div
-                className="h-3 w-3 rounded-full shrink-0"
-                style={{ backgroundColor: d.color }}
-              />
-              <span className="flex-1 text-sm text-slate-300">{d.name}</span>
-              <span className="text-sm font-medium text-slate-200">
-                {d.percentage}%
-              </span>
-            </div>
-          ))}
-        </div>
+
+      {/* Chart — centered, fixed pixel size, no ResponsiveContainer */}
+      <div className="flex justify-center">
+        <PieChart width={CHART_SIZE} height={CHART_SIZE}>
+          <Pie
+            data={withPct}
+            cx={CHART_SIZE / 2}
+            cy={CHART_SIZE / 2}
+            innerRadius={INNER_R}
+            outerRadius={OUTER_R}
+            paddingAngle={3}
+            dataKey="value"
+            strokeWidth={0}
+          >
+            {withPct.map((entry, i) => (
+              <Cell key={i} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.[0]) return null
+              const d = payload[0].payload
+              return (
+                <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm shadow-xl">
+                  <p className="font-medium" style={{ color: d.color }}>{d.name}</p>
+                  <p className="text-slate-300">{formatCurrency(d.value)}</p>
+                </div>
+              )
+            }}
+          />
+        </PieChart>
+      </div>
+
+      {/* Legend — sits below the chart, no horizontal competition with it */}
+      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+        {withPct.map((d) => (
+          <div key={d.name} className="flex items-center gap-2 min-w-0">
+            <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+            <span className="truncate text-sm text-slate-300">{d.name}</span>
+            <span className="shrink-0 text-sm font-semibold text-slate-200">{d.percentage}%</span>
+          </div>
+        ))}
       </div>
     </div>
   )

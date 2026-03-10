@@ -35,17 +35,11 @@ export function TopOffenders({ categorySpending }: TopOffendersProps) {
           const color = GROUP_COLORS[category.group]
           return (
             <div key={category.id} className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-slate-200">
-                  <Icon name={category.icon} size={18} className={getCategoryIconClassName(category.group)} />
-                  <span className="text-xs font-medium text-slate-400">
-                    #{i + 1}
-                  </span>
-                  {category.name}
-                </span>
-                <span className="font-medium text-slate-200">
-                  {formatCurrency(total)}
-                </span>
+              <div className="flex min-w-0 items-center gap-2 text-sm">
+                <Icon name={category.icon} size={16} className={`shrink-0 ${getCategoryIconClassName(category.group)}`} />
+                <span className="shrink-0 text-xs font-medium text-slate-500">#{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-slate-200">{category.name}</span>
+                <span className="shrink-0 font-medium text-slate-200">{formatCurrency(total)}</span>
               </div>
               <div className="progress-track h-2 overflow-hidden rounded-full bg-slate-800">
                 <div

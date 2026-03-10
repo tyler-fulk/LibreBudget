@@ -43,6 +43,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme])
 
+  // Re-apply theme if restored from a backup (backup.ts dispatches this event)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { key, value } = (e as CustomEvent<{ key: string; value: string }>).detail
+      if (key === 'lb-theme' && THEMES.includes(value as Theme)) {
+        setTheme(value as Theme)
+      }
+    }
+    window.addEventListener('lb-localstorage-restored', handler)
+    return () => window.removeEventListener('lb-localstorage-restored', handler)
+  }, [])
+
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
 
   return (

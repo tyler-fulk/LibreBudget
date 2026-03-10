@@ -121,7 +121,7 @@ export default function CreditScore() {
 
       {/* Stats */}
       {scores.length > 1 && (
-        <div className="grid gap-4 grid-cols-3">
+        <div className="grid gap-3 grid-cols-3">
           <Card>
             <p className="text-xs text-slate-500">Highest</p>
             <p className="text-2xl font-bold text-green-400">{highest}</p>

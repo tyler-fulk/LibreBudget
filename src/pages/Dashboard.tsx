@@ -21,7 +21,7 @@ import {
 import { getMonthlyForecast, type Forecast } from '../utils/forecasting'
 import { useCreditScores } from '../hooks/useCreditScores'
 import type { CategoryGroup, Category } from '../db/database'
-import { getCategoryIconClassName } from '../utils/colors'
+import { getCategoryIconClassName, GROUP_COLORS, GROUP_LABELS } from '../utils/colors'
 import { Icon } from '../components/ui/Icon'
 
 const CONFIDENCE_TIPS: Record<string, string> = {
@@ -130,21 +130,49 @@ export default function Dashboard() {
             <Link to="/add" className="text-green-400 hover:text-green-300">Add your first one</Link>
           </p>
         ) : (
-          <div className="space-y-2">
-            {transactions.slice(0, 5).map((tx) => {
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            {transactions.slice(0, 5).map((tx, idx) => {
               const cat = getCategoryById(tx.categoryId)
               return (
-                <div key={tx.id} className="flex items-center gap-3 rounded-xl bg-slate-800/50 p-3">
-                  <Icon name={cat?.icon ?? 'Wallet'} size={20} className={cat ? getCategoryIconClassName(cat.group) : ''} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-200">
-                      {tx.description || cat?.name || 'Transaction'}
-                    </p>
-                    <p className="text-xs text-slate-500">{format(new Date(tx.date), 'MMM d')}</p>
-                  </div>
-                  <p className={`text-sm font-semibold ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
-                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                  </p>
+                <div key={tx.id}>
+                  {idx > 0 && <div className="border-t border-slate-800" />}
+                  <Link
+                    to="/transactions"
+                    className="tx-row flex items-center gap-3 px-3.5 py-3 active:bg-slate-800"
+                  >
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: cat ? `${GROUP_COLORS[cat.group]}18` : '#262626' }}
+                    >
+                      <Icon
+                        name={cat?.icon ?? 'Wallet'}
+                        size={18}
+                        className={cat ? getCategoryIconClassName(cat.group) : 'text-slate-500'}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium leading-snug text-slate-200">
+                        {tx.description || cat?.name || 'Transaction'}
+                      </p>
+                      {cat && (
+                        <span
+                          className="mt-0.5 inline-block max-w-full truncate rounded-md px-1.5 py-px text-xs font-medium leading-none"
+                          style={{
+                            backgroundColor: `${GROUP_COLORS[cat.group]}1a`,
+                            color: GROUP_COLORS[cat.group],
+                          }}
+                        >
+                          {GROUP_LABELS[cat.group]} · {cat.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className={`text-sm font-semibold tabular-nums ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
+                        {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount)}
+                      </p>
+                      <p className="text-xs text-slate-500">{format(new Date(tx.date), 'MMM d')}</p>
+                    </div>
+                  </Link>
                 </div>
               )
             })}
@@ -178,7 +206,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-xs text-slate-500">Projected Spend</p>
               <p className={`text-lg font-bold ${forecast.onTrack ? 'text-slate-200' : 'text-red-400'}`}>

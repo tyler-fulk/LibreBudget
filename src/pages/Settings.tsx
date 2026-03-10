@@ -234,15 +234,15 @@ export default function Settings() {
       {/* Appearance */}
       <Card>
         <h3 className="mb-3 text-sm font-medium text-slate-200">Appearance</h3>
-        <div className="flex flex-wrap justify-between gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {THEMES.map((t) => {
             const preview = {
               black:     { outer: 'bg-black', bar: 'bg-[#262626]', inner: 'border-[#1a1a1a] bg-[#0a0a0a]', content: 'bg-[#1a1a1a]', accent: 'bg-green-600/60' },
-              dark:      { outer: 'bg-[#0a0a0a]', bar: 'bg-slate-700', inner: 'border-slate-800 bg-[#171717]', content: 'bg-slate-800', accent: 'bg-green-600/60' },
+              dark:      { outer: 'bg-[#0a0a0a]', bar: 'bg-[#404040]', inner: 'border-[#262626] bg-[#171717]', content: 'bg-[#262626]', accent: 'bg-green-600/60' },
               developer: { outer: 'bg-[#1e1e1e]', bar: 'bg-[#454545]', inner: 'border-[#3c3c3c] bg-[#252526]', content: 'bg-[#454545]', accent: 'bg-[#007acc]/70' },
               monokai:   { outer: 'bg-[#282828]', bar: 'bg-[#505050]', inner: 'border-[#404040] bg-[#303030]', content: 'bg-[#505050]', accent: 'bg-[#a9dc76]/70' },
               obsidian:  { outer: 'bg-[#1e1e1e]', bar: 'bg-[#3f3f3f]', inner: 'border-[#363636] bg-[#242424]', content: 'bg-[#3f3f3f]', accent: 'bg-[#a882ff]/70' },
-              ocean:     { outer: 'bg-[#0f172a]', bar: 'bg-slate-600', inner: 'border-slate-600 bg-[#1e293b]', content: 'bg-slate-600', accent: 'bg-cyan-500/50' },
+              ocean:     { outer: 'bg-[#0f172a]', bar: 'bg-[#475569]', inner: 'border-[#475569] bg-[#1e293b]', content: 'bg-[#475569]', accent: 'bg-cyan-500/50' },
               purple:    { outer: 'bg-[#1e1b4b]', bar: 'bg-[#6366f1]', inner: 'border-[#4338ca] bg-[#312e81]', content: 'bg-[#4338ca]/60', accent: 'bg-[#a78bfa]/70' },
               light:     { outer: 'bg-[#cbd5e1]', bar: 'bg-slate-400', inner: 'border-slate-400 bg-[#e2e8f0]', content: 'bg-slate-300', accent: 'bg-[#008526]/50' },
             }[t]
@@ -253,7 +253,7 @@ export default function Settings() {
                 onClick={() => setTheme(t)}
                 aria-pressed={theme === t}
                 aria-label={`${t} theme`}
-                className={`max-w-[100px] flex-1 min-w-[80px] overflow-hidden rounded-xl border-2 transition-colors ${
+                className={`overflow-hidden rounded-xl border-2 transition-colors ${
                   theme === t ? 'border-green-500 ring-2 ring-green-500/30' : 'border-slate-700 hover:border-slate-600'
                 }`}
               >

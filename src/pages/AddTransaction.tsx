@@ -393,7 +393,7 @@ export default function AddTransaction() {
           </div>
           <div>
             <label className="mb-2 block text-sm text-slate-400">Icon</label>
-            <div className="grid grid-cols-8 gap-1.5">
+            <div className="grid grid-cols-8 gap-1">
               {CATEGORY_ICONS.map((ic) => (
                 <button
                   key={ic}

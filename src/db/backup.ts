@@ -18,12 +18,26 @@ export interface BackupPayload {
   backedUpAt: string
 }
 
+/** localStorage keys to include in backup alongside IndexedDB settings */
+const BACKUP_LOCAL_KEYS = ['lb-theme'] as const
+
 export async function serializeDatabase(): Promise<BackupPayload> {
+  const settings = await db.settings.toArray()
+
+  // Inject localStorage-only preferences into settings for backup
+  const settingKeys = new Set(settings.map((s) => s.key))
+  for (const key of BACKUP_LOCAL_KEYS) {
+    if (!settingKeys.has(key)) {
+      const val = localStorage.getItem(key)
+      if (val) settings.push({ key, value: val })
+    }
+  }
+
   return {
     categories: await db.categories.toArray(),
     transactions: await db.transactions.toArray(),
     budgetGoals: await db.budgetGoals.toArray(),
-    settings: await db.settings.toArray(),
+    settings,
     recurringTransactions: await db.recurringTransactions.toArray(),
     savingsGoals: await db.savingsGoals.toArray(),
     debts: await db.debts.toArray(),
@@ -73,6 +87,11 @@ export function validateBackupPayload(data: unknown): { valid: boolean; reason?:
 }
 
 export async function hydrateDatabase(data: BackupPayload): Promise<void> {
+  // Persist backup timestamp so the UI always shows when data was last backed up,
+  // regardless of which restore path (RestoreWallet or restoreFromCloud) is used.
+  if (data.backedUpAt) {
+    localStorage.setItem('lb_last_backup_at', data.backedUpAt)
+  }
   await db.transaction(
     'rw',
     [db.categories, db.transactions, db.budgetGoals, db.settings,
@@ -150,14 +169,19 @@ export async function hydrateDatabase(data: BackupPayload): Promise<void> {
       if (data.settings?.length) {
         const seen = new Set<string>()
         const sanitized: { key: string; value: string }[] = []
+        const localKeysSet = new Set<string>(BACKUP_LOCAL_KEYS)
         for (const s of data.settings as Record<string, unknown>[]) {
           const key = sanitizeString(String(s.key ?? ''), 100)
           if (!key || seen.has(key)) continue
           seen.add(key)
-          sanitized.push({
-            key,
-            value: sanitizeString(String(s.value ?? ''), 500),
-          })
+          const value = sanitizeString(String(s.value ?? ''), 500)
+          // Restore localStorage-only keys to localStorage instead of DB
+          if (localKeysSet.has(key)) {
+            localStorage.setItem(key, value)
+            window.dispatchEvent(new CustomEvent('lb-localstorage-restored', { detail: { key, value } }))
+            continue
+          }
+          sanitized.push({ key, value })
         }
         await db.settings.bulkAdd(sanitized)
       }
@@ -218,6 +242,7 @@ export async function hydrateDatabase(data: BackupPayload): Promise<void> {
             targetMonthlyPayment: rest.targetMonthlyPayment != null ? sanitizeAmount(Number(rest.targetMonthlyPayment) || 0) : undefined,
             dueDay: rest.dueDay != null ? Math.min(31, Math.max(1, Math.round(Number(rest.dueDay) || 1))) : undefined,
             notes: rest.notes != null ? sanitizeString(String(rest.notes)) : undefined,
+            annualFee: rest.annualFee != null ? sanitizeAmount(Number(rest.annualFee) || 0) : undefined,
             createdAt,
           }
         })

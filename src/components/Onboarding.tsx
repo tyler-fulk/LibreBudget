@@ -4,34 +4,34 @@ import { Icon } from './ui/Icon'
 
 const STEPS = [
   {
-    title: 'Welcome to LibreBudget!',
-    description: 'A free, open-source budget tracker. Your data stays on your device by default — nothing is sent to any server unless you opt in.',
+    title: 'Welcome to LibreBudget',
+    description: 'A free, open-source budget tracker. Your data stays on your device — nothing is sent anywhere unless you enable optional encrypted cloud backup.',
     icon: 'Hand',
   },
   {
-    title: 'Track Income & Expenses',
-    description: 'Add transactions as they happen. Categorize them as needs, wants, or savings to see where your money goes.',
-    icon: 'Wallet',
+    title: 'Your Dashboard',
+    description: 'See income, expenses, and savings at a glance. The budget health bar and % of income saved (goal: 25%+) keep you on track. Add transactions with the + button.',
+    icon: 'LayoutDashboard',
   },
   {
-    title: 'Watch Your Health Bar',
-    description: 'The health bar turns from green to red as you approach your budget limit. Stay green to stay on track!',
-    icon: 'Leaf',
+    title: 'Budget & Spending',
+    description: 'Set monthly limits in Budget. Track transactions, recurring items (rent, subscriptions, salary), and debts. Categorize as needs, wants, or savings.',
+    icon: 'DollarSign',
   },
   {
-    title: 'Set Budget Goals',
-    description: 'Set monthly limits for each category group. Track your progress with visual progress bars.',
-    icon: 'Target',
+    title: 'Wealth Tools',
+    description: 'Savings goals, compound interest & retirement calculators, auto loan (20/3/8 rule), home affordability (own or rent). Plus credit score tracking.',
+    icon: 'BarChart3',
   },
   {
-    title: 'Recurring Transactions',
-    description: 'Set up rent, subscriptions, and salary to be auto-logged. Never forget a recurring expense.',
-    icon: 'Repeat',
+    title: 'Financial Roadmap & Insights',
+    description: 'Follow the step-by-step Financial Roadmap. Use Trends, Monthly Review, and Year Review to see how you\'re improving over time.',
+    icon: 'Map',
   },
   {
-    title: 'Review & Improve',
-    description: 'Check the Monthly Review and Trends pages to see how you\'re improving over time. You\'ve got this!',
-    icon: 'TrendingUp',
+    title: "You're All Set",
+    description: 'Set your monthly budget in Settings, then add your first transaction. Need help? Check Settings for themes, accessibility options, and optional cloud backup.',
+    icon: 'Trophy',
   },
 ]
 
@@ -56,7 +56,7 @@ export function Onboarding() {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/70" />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl text-center">
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl text-center">
         <div className="flex justify-center mb-4">
           <Icon name={current.icon} size={56} className="text-green-400" />
         </div>
@@ -65,22 +65,33 @@ export function Onboarding() {
 
         <div className="flex items-center justify-center gap-1.5 mb-6">
           {STEPS.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-6 bg-green-500' : 'w-1.5 bg-slate-700'}`} />
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i === step ? 'w-6 bg-green-500' : 'w-1.5 bg-slate-700'
+              }`}
+            />
           ))}
         </div>
 
         <div className="flex gap-3">
           {step > 0 && (
-            <Button variant="secondary" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>
+            <Button variant="secondary" onClick={() => setStep(step - 1)} className="flex-1">
+              Back
+            </Button>
           )}
           {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep(step + 1)} className="flex-1">Next</Button>
+            <Button onClick={() => setStep(step + 1)} className="flex-1">
+              Next
+            </Button>
           ) : (
-            <Button onClick={finish} className="flex-1">Get Started</Button>
+            <Button onClick={finish} className="flex-1">
+              Get Started
+            </Button>
           )}
         </div>
 
-        <button onClick={finish} className="mt-4 text-xs text-slate-500 hover:text-slate-300">
+        <button onClick={finish} className="mt-4 block w-full text-xs text-slate-500 hover:text-slate-300">
           Skip walkthrough
         </button>
       </div>

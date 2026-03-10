@@ -12,9 +12,9 @@ export default function PrivacyManifesto() {
       </div>
 
       <Card>
-        <div className="prose prose-invert prose-sm max-w-none space-y-6 text-slate-300 [&_a]:text-green-400 [&_a:hover]:text-green-300 [&_h2]:text-slate-100 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-slate-200 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-1 [&_strong]:text-slate-200 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_p]:leading-relaxed">
+        <div className="prose-content">
 
-          <p className="text-slate-200">
+          <p>
             LibreBudget is built on one principle: <strong>your money data is yours</strong>.
             We use a <strong>zero-knowledge architecture</strong> — we cannot read,
             analyze, or recover your financial data, even when you use cloud backup.
@@ -95,7 +95,7 @@ export default function PrivacyManifesto() {
             <li>We don&apos;t have the ability to decrypt your data — zero-knowledge by architecture.</li>
           </ul>
 
-          <p className="text-slate-400 text-sm pt-2">
+          <p className="pt-2" style={{ opacity: 0.7 }}>
             LibreBudget is open-source. You can read the code, run it yourself,
             and verify these claims. Privacy isn&apos;t a feature — it&apos;s the
             foundation. Zero-knowledge isn&apos;t a promise; it&apos;s how the system

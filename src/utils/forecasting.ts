@@ -129,7 +129,7 @@ export async function getMonthlyForecast(budget: number): Promise<Forecast> {
 
   // Historical variable daily rate (only variable categories)
   let historicalVariableMonthly = 0
-  for (const [catId, stat] of catStats) {
+  for (const [, stat] of catStats) {
     const avgFreq = stat.totalTxCount / pastMonthCount
     if (avgFreq >= FIXED_FREQ_THRESHOLD) {
       historicalVariableMonthly += stat.totalAmount / pastMonthCount

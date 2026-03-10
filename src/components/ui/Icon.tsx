@@ -54,6 +54,11 @@ import {
   Pencil,
   BookOpen,
   ExternalLink,
+  ChevronRight,
+  HardDrive,
+  RefreshCw,
+  WifiOff,
+  Key,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -114,6 +119,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Pencil,
   BookOpen,
   ExternalLink,
+  ChevronRight,
+  HardDrive,
+  RefreshCw,
+  WifiOff,
+  Key,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

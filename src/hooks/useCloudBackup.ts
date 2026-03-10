@@ -7,14 +7,16 @@ import { encryptBackup, decryptBackup } from '../utils/crypto'
 const BACKUP_API_URL = import.meta.env.VITE_BACKUP_API_URL as string | undefined
 
 /** Debounce delay for auto-backup after edits (protects KV 1k writes/day limit) */
-const AUTO_BACKUP_DEBOUNCE_MS = 30_000
+const AUTO_BACKUP_DEBOUNCE_MS = 10_000
 
 /** Cooldown after manual backup */
 const MANUAL_BACKUP_COOLDOWN_SEC = 30
 
 export function useCloudBackup() {
   const { wallet, hasWallet } = useWallet()
-  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null)
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(
+    () => localStorage.getItem('lb_last_backup_at')
+  )
   const [isBacking, setIsBacking] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -67,6 +69,7 @@ export function useCloudBackup() {
           body: JSON.stringify({ id: wallet.anonymousId, payload: encrypted }),
         })
         if (!res.ok) throw new Error('Backup failed')
+        localStorage.setItem('lb_last_backup_at', payload.backedUpAt)
         setLastBackupAt(payload.backedUpAt)
 
         if (!isAuto) {
@@ -149,6 +152,7 @@ export function useCloudBackup() {
         }
 
         await hydrateDatabase(payload)
+        localStorage.setItem('lb_last_backup_at', payload.backedUpAt)
         setLastBackupAt(payload.backedUpAt)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Restore failed')
@@ -158,13 +162,6 @@ export function useCloudBackup() {
     },
     [enabled, wallet]
   )
-
-  useEffect(() => {
-    if (!enabled || !wallet) {
-      setLastBackupAt(null)
-      return
-    }
-  }, [enabled, wallet])
 
   useEffect(() => {
     if (!enabled) return

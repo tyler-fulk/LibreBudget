@@ -129,184 +129,197 @@ export default function Account() {
   return (
     <>
       <AccountOnboarding />
-      <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Account</h1>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Account</h1>
 
-      <Card>
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-600/20 text-xl text-green-400">
-            <Icon name="Wallet" size={24} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-slate-200 truncate">
-              Vault active · Cloud backup {backupEnabled ? 'enabled' : 'disabled'}
-            </p>
-            <p className="text-xs text-slate-500 font-mono truncate">
-              ID: {wallet?.anonymousId?.slice(0, 16)}…
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={clearWallet}>
-            Lock Vault
-          </Button>
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="mb-3 text-sm font-medium text-slate-400">
-          Cloud Backup
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div
-              className={`h-3 w-3 rounded-full ${
-                lastBackupAt ? 'bg-green-500' : 'bg-slate-600'
-              }`}
-            />
-            <div>
-              <p className="text-sm text-slate-200">
-                {lastBackupAt
-                  ? `Last backed up: ${format(new Date(lastBackupAt), 'MMM d, yyyy h:mm a')}`
-                  : 'No backup yet'}
-              </p>
-              <p className="text-xs text-slate-500">
-                Encrypted changes are auto-backed up after edits
+        {/* Vault hero card */}
+        <Card className="overflow-hidden !p-0">
+          {/* Green accent header */}
+          <div className="flex items-center gap-4 bg-green-600/10 border-b border-green-600/20 px-4 py-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600/20">
+              <Icon name="Wallet" size={22} className="text-green-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-100">Vault Active</span>
+                <span className="flex items-center gap-1 rounded-full bg-green-600/20 px-2 py-0.5 text-xs font-medium text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                  Unlocked
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Cloud backup {backupEnabled ? 'enabled' : 'disabled'}
               </p>
             </div>
           </div>
 
-          {backupError && (
-            <div className="rounded-xl bg-red-900/20 border border-red-800 p-3 text-sm text-red-300">
-              {backupError}
+          {/* Vault ID row */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-800">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500 mb-0.5">Anonymous ID</p>
+              <p className="font-mono text-xs text-slate-300 truncate">
+                {wallet?.anonymousId?.slice(0, 24)}…
+              </p>
             </div>
-          )}
-
-          {TURNSTILE_REQUIRED && !TURNSTILE_SITE_KEY && (
-            <div className="rounded-xl bg-amber-900/20 border border-amber-800/40 p-3 text-sm text-amber-200">
-              Cloud backup requires VITE_TURNSTILE_SITE_KEY in production. See SETUP.md.
-            </div>
-          )}
-          {TURNSTILE_SITE_KEY && (
-            <div className="flex justify-center">
-              <Turnstile
-                siteKey={TURNSTILE_SITE_KEY}
-                options={{ theme: 'dark' }}
-                onSuccess={(token) => setTurnstileToken(token)}
-                onExpire={() => setTurnstileToken(null)}
-              />
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => backupNow()}
-              disabled={isBacking || backupCooldown > 0}
-              className="flex-1"
-            >
-              {isBacking ? 'Backing up...' : backupCooldown > 0 ? `Wait ${backupCooldown}s` : 'Backup Now'}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                window.confirm(
-                  'This will replace all local data with your cloud backup. Continue?'
-                ) && restoreFromCloud(turnstileToken ?? undefined)
-              }
-              disabled={isRestoring || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
-              className="flex-1"
-            >
-              {isRestoring ? 'Restoring...' : 'Restore from Cloud'}
-            </Button>
+            <Icon name="Shield" size={16} className="shrink-0 text-slate-600" />
           </div>
 
-          <p className="text-xs text-slate-500">
-            Restore pulls your latest cloud backup into this browser, replacing
-            local data.
-          </p>
+          {/* Lock vault button */}
+          <button
+            onClick={clearWallet}
+            className="tx-row flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-800"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-800">
+              <Icon name="Lock" size={15} className="text-slate-400" />
+            </div>
+            <span className="flex-1 text-sm text-slate-300">Lock Vault</span>
+            <Icon name="ChevronRight" size={15} className="text-slate-600" />
+          </button>
+        </Card>
 
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <p className="text-xs text-slate-500 mb-2">
-              Delete all cloud backup data. Local data will remain until you lock
-              your vault. This cannot be undone.
-            </p>
-            {!showDeleteConfirm ? (
-              <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
-                Delete cloud backup
-              </Button>
-            ) : (
-              <div className="space-y-3 rounded-xl bg-red-900/20 border border-red-800/50 p-3">
-                <p className="text-sm text-slate-300">
-                  Type <span className="font-mono font-bold text-red-400">DELETE</span> to
-                  confirm:
+        {/* Cloud Backup card */}
+        <Card>
+          <h3 className="mb-3 text-sm font-medium text-slate-400">Cloud Backup</h3>
+          <div className="space-y-4">
+
+            {/* Status pill */}
+            <div className="flex items-center gap-3 rounded-xl bg-slate-800 px-3.5 py-3">
+              <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${lastBackupAt ? 'bg-green-500' : 'bg-slate-600'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-slate-200 truncate">
+                  {lastBackupAt
+                    ? `Backed up ${format(new Date(lastBackupAt), 'MMM d · h:mm a')}`
+                    : 'No backup yet'}
                 </p>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    disabled={deleteConfirmText !== 'DELETE' || isDeleting}
-                    onClick={async () => {
-                      const { error: err } = await deleteAccountData()
-                      if (!err) {
-                        setShowDeleteConfirm(false)
-                        setDeleteConfirmText('')
-                      }
-                    }}
-                  >
-                    {isDeleting ? 'Deleting...' : 'Permanently delete cloud backup'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isDeleting}
-                    onClick={() => {
-                      setShowDeleteConfirm(false)
-                      setDeleteConfirmText('')
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <p className="text-xs text-slate-500">Auto-syncs after every change</p>
+              </div>
+            </div>
+
+            {backupError && (
+              <div className="rounded-xl bg-red-900/20 border border-red-800 p-3 text-sm text-red-300">
+                {backupError}
               </div>
             )}
-          </div>
-        </div>
-      </Card>
 
-      <Card>
-        <h3 className="mb-2 text-sm font-medium text-slate-400">
-          How Cloud Backup Works
-        </h3>
-        <ul className="space-y-2 text-sm text-slate-400">
-          <li className="flex items-start gap-2">
-            <span className="text-green-400 mt-0.5">1.</span>
-            Your data is stored locally in this browser first
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-400 mt-0.5">2.</span>
-            Your recovery phrase derives encryption keys — never shared
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-400 mt-0.5">3.</span>
-            Data is encrypted with AES-256-GCM before leaving your device
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-400 mt-0.5">4.</span>
-            On a new device, restore with your recovery phrase
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-400 mt-0.5">5.</span>
-            The app works fully offline — cloud is optional
-          </li>
-        </ul>
-      </Card>
-    </div>
+            {TURNSTILE_REQUIRED && !TURNSTILE_SITE_KEY && (
+              <div className="rounded-xl bg-amber-900/20 border border-amber-800/40 p-3 text-sm text-amber-200">
+                Cloud backup requires VITE_TURNSTILE_SITE_KEY in production. See SETUP.md.
+              </div>
+            )}
+            {TURNSTILE_SITE_KEY && (
+              <div className="flex justify-center">
+                <Turnstile
+                  siteKey={TURNSTILE_SITE_KEY}
+                  options={{ theme: 'dark' }}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </div>
+            )}
+
+            {/* Action buttons — stacked for mobile */}
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="primary"
+                onClick={() => backupNow()}
+                disabled={isBacking || backupCooldown > 0}
+                className="w-full"
+              >
+                {isBacking ? 'Backing up…' : backupCooldown > 0 ? `Wait ${backupCooldown}s` : 'Backup Now'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  window.confirm(
+                    'This will replace all local data with your cloud backup. Continue?'
+                  ) && restoreFromCloud(turnstileToken ?? undefined)
+                }
+                disabled={isRestoring || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
+                className="w-full"
+              >
+                {isRestoring ? 'Restoring…' : 'Restore from Cloud'}
+              </Button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Restore pulls your latest cloud backup into this browser, replacing local data.
+            </p>
+
+            {/* Danger zone */}
+            <div className="pt-3 border-t border-slate-800">
+              <p className="text-xs text-slate-500 mb-3">
+                Permanently delete cloud backup data. Local data is unaffected. This cannot be undone.
+              </p>
+              {!showDeleteConfirm ? (
+                <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+                  Delete cloud backup
+                </Button>
+              ) : (
+                <div className="space-y-3 rounded-xl bg-red-900/20 border border-red-800/50 p-3">
+                  <p className="text-sm text-slate-300">
+                    Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                      onClick={async () => {
+                        const { error: err } = await deleteAccountData()
+                        if (!err) {
+                          setShowDeleteConfirm(false)
+                          setDeleteConfirmText('')
+                        }
+                      }}
+                    >
+                      {isDeleting ? 'Deleting…' : 'Permanently delete'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        setShowDeleteConfirm(false)
+                        setDeleteConfirmText('')
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* How it works */}
+        <Card>
+          <h3 className="mb-3 text-sm font-medium text-slate-400">How Cloud Backup Works</h3>
+          <div className="space-y-3">
+            {[
+              { icon: 'HardDrive', text: 'Your data lives locally in this browser first' },
+              { icon: 'Key', text: 'Your recovery phrase derives encryption keys — never shared' },
+              { icon: 'Lock', text: 'Data is encrypted with AES-256-GCM before leaving your device' },
+              { icon: 'RefreshCw', text: 'On a new device, restore with your recovery phrase' },
+              { icon: 'WifiOff', text: 'The app works fully offline — cloud is optional' },
+            ].map(({ icon, text }, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-600/10">
+                  <Icon name={icon} size={14} className="text-green-400" />
+                </div>
+                <p className="text-sm text-slate-400 leading-snug pt-0.5">{text}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </>
   )
 }

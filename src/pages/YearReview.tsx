@@ -271,8 +271,8 @@ export default function YearReview() {
                   const spendPct = (m.spending / maxVal) * 100
                   const savePct = (m.saved / maxVal) * 100
                   return (
-                    <div key={m.label} className="flex items-center gap-3">
-                      <span className="w-24 shrink-0 text-right text-xs text-slate-400">{m.label}</span>
+                    <div key={m.label} className="flex items-center gap-2">
+                      <span className="w-16 shrink-0 truncate text-right text-xs text-slate-400">{m.label}</span>
                       <div className="flex-1 flex h-5 rounded-full overflow-hidden bg-slate-800 gap-px">
                         {m.spending > 0 && (
                           <div

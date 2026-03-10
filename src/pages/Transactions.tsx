@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
+import { Search, SlidersHorizontal, ChevronDown, Trash2, X } from 'lucide-react'
 import { Card } from '../components/ui/Card'
-import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
@@ -32,6 +32,19 @@ export default function Transactions() {
   const [editNote, setEditNote] = useState('')
   const [editCategoryId, setEditCategoryId] = useState<number | null>(null)
   const [expandedTx, setExpandedTx] = useState<number | null>(null)
+  const groupsRef = useRef<HTMLDivElement>(null)
+
+  // Close expanded transaction when clicking outside the groups container
+  useEffect(() => {
+    if (expandedTx === null) return
+    const handler = (e: MouseEvent) => {
+      if (groupsRef.current && !groupsRef.current.contains(e.target as Node)) {
+        setExpandedTx(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [expandedTx])
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -104,60 +117,68 @@ export default function Transactions() {
   const hasActiveFilters = search || categoryFilter !== 'all' || dateFrom || dateTo || amountMin || amountMax
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Transactions</h1>
-        </div>
+        <h1 className="text-2xl font-bold">Transactions</h1>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-400">{filtered.length} entries</span>
           <Link
             to="/add"
             className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
           >
-            <Icon name="Plus" size={18} />
-            Add Transaction
+            <Icon name="Plus" size={16} />
+            Add
           </Link>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" strokeWidth={1.75} />
         <input
           type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search description, notes, category..."
-          className="w-full rounded-xl border border-slate-800 bg-slate-900 py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+          placeholder="Search description, notes, category…"
+          className="w-full rounded-xl border border-slate-800 bg-slate-900 py-2.5 pl-10 pr-10 text-sm text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
         />
-        {hasActiveFilters && (
-          <button onClick={clearFilters} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-300">Clear</button>
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+            <X size={16} strokeWidth={1.75} />
+          </button>
         )}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 rounded-xl bg-slate-900 border border-slate-800 p-1">
+      {/* Type tabs */}
+      <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
         {(['all', 'expense', 'income'] as const).map((f) => (
           <button
             key={f} onClick={() => setFilter(f)}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 rounded-lg py-1.5 text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'}`}
           >{f}</button>
         ))}
       </div>
 
       {/* Advanced filters toggle */}
-      <button onClick={() => setShowFilters(!showFilters)}
-        className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300">
-        <svg className={`h-3 w-3 transition-transform ${showFilters ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        Advanced filters {hasActiveFilters ? '(active)' : ''}
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+      >
+        <SlidersHorizontal size={14} strokeWidth={1.75} />
+        <span>Filters</span>
+        {hasActiveFilters && <span className="rounded-full bg-green-500/20 px-1.5 py-px text-xs font-medium text-green-400">active</span>}
+        {hasActiveFilters && (
+          <button
+            onClick={(e) => { e.stopPropagation(); clearFilters() }}
+            className="ml-1 text-slate-600 hover:text-slate-400"
+          >
+            <X size={12} strokeWidth={1.75} />
+          </button>
+        )}
       </button>
 
       {showFilters && (
-        <Card className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+        <Card className="space-y-3 !p-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-xs text-slate-500">From</label>
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -169,7 +190,7 @@ export default function Transactions() {
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-100 focus:border-green-500 focus:outline-none" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-xs text-slate-500">Min Amount</label>
               <input type="number" step="0.01" value={amountMin} onChange={(e) => setAmountMin(e.target.value)}
@@ -192,74 +213,113 @@ export default function Transactions() {
         </Card>
       )}
 
-      {/* Transaction list */}
+      {/* Empty state */}
       {sortedDates.length === 0 && (
-        <Card className="text-center">
-          <p className="text-slate-400 py-8">
+        <Card className="py-10 text-center">
+          <p className="text-slate-400">
             {hasActiveFilters ? 'No matching transactions.' : 'No transactions yet. Start by adding one!'}
           </p>
         </Card>
       )}
 
-      {sortedDates.map((date) => (
-        <div key={date} className="space-y-2">
-          <h3 className="px-1 text-sm font-medium text-slate-500">
-            {format(parseISO(date), 'EEEE, MMM d, yyyy')}
-          </h3>
-          <div className="space-y-2">
-            {grouped[date].map((tx) => {
+      {/* Transaction groups */}
+      <div ref={groupsRef}>
+      {sortedDates.map((date, i) => (
+        <div key={date} className={`space-y-1.5 ${i > 0 ? 'mt-3' : ''}`}>
+          {/* Date header */}
+          <div className="flex items-center gap-2 px-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {format(parseISO(date), 'EEE, MMM d, yyyy')}
+            </h3>
+            <span className="text-xs text-slate-700">·</span>
+            <span className="text-xs text-slate-600">{grouped[date].length}</span>
+          </div>
+
+          {/* Rows */}
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            {grouped[date].map((tx, idx) => {
               const cat = getCategoryById(tx.categoryId)
               const isExpanded = expandedTx === tx.id
+              const isLast = idx === grouped[date].length - 1
+
               return (
                 <div key={tx.id}>
-                  <Card className="flex items-center gap-3 !p-4 group cursor-pointer" onClick={() => setExpandedTx(isExpanded ? null : (tx.id ?? null))}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: cat ? `${GROUP_COLORS[cat.group]}15` : '#334155' }}>
-                      <Icon name={cat?.icon ?? 'Wallet'} size={20} className={cat ? getCategoryIconClassName(cat.group) : ''} />
+                  {/* Divider between rows — full-width so it doesn't gap against an expanded panel's bg */}
+                  {idx > 0 && <div className="border-t border-slate-800" />}
+
+                  {/* Main row — always a button for tap target */}
+                  <button
+                    className={`tx-row flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-slate-800 ${isExpanded ? 'bg-slate-800' : ''}`}
+                    onClick={() => setExpandedTx(isExpanded ? null : (tx.id ?? null))}
+                  >
+                    {/* Category icon */}
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: cat ? `${GROUP_COLORS[cat.group]}18` : '#262626' }}
+                    >
+                      <Icon
+                        name={cat?.icon ?? 'Wallet'}
+                        size={18}
+                        className={cat ? getCategoryIconClassName(cat.group) : 'text-slate-500'}
+                      />
                     </div>
+
+                    {/* Description + category chip */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-200">
+                      <p className="truncate text-sm font-medium leading-snug text-slate-200">
                         {tx.description || cat?.name || 'Transaction'}
                       </p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {cat && (
-                          <>
-                            <span
-                              className="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                              style={{ backgroundColor: `${GROUP_COLORS[cat.group]}25`, color: GROUP_COLORS[cat.group] }}
-                              title={`Core: ${GROUP_LABELS[cat.group]}`}
-                            >
-                              {GROUP_LABELS[cat.group]}
-                            </span>
-                            <Badge color={GROUP_COLORS[cat.group]}>{cat.name}</Badge>
-                          </>
-                        )}
-                        {tx.note && <Icon name="FileText" size={14} className="text-slate-600" />}
+                      {cat && (
+                        <span
+                          className="mt-0.5 inline-block max-w-full truncate rounded-md px-1.5 py-px text-xs font-medium leading-none"
+                          style={{
+                            backgroundColor: `${GROUP_COLORS[cat.group]}1a`,
+                            color: GROUP_COLORS[cat.group],
+                          }}
+                        >
+                          {GROUP_LABELS[cat.group]} · {cat.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Amount + chevron */}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className={`text-sm font-semibold tabular-nums ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
+                        {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount)}
+                      </span>
+                      <ChevronDown
+                        size={13}
+                        strokeWidth={1.75}
+                        className={`text-slate-600 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Expanded panel: note + actions */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-800 bg-slate-800 px-3.5 py-3 space-y-2.5">
+                      {tx.note && (
+                        <p className="flex items-start gap-2 text-sm text-slate-400">
+                          <Icon name="FileText" size={14} className="mt-0.5 shrink-0 text-slate-600" />
+                          <span>{tx.note}</span>
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(tx)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-700 py-2 text-sm font-medium text-slate-200 transition-colors active:bg-slate-600"
+                        >
+                          <Icon name="Pencil" size={14} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(tx)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-700 py-2 text-sm font-medium text-red-400 transition-colors active:bg-slate-600"
+                        >
+                          <Trash2 size={14} strokeWidth={1.75} />
+                          Delete
+                        </button>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${tx.type === 'income' ? 'text-green-400' : 'text-slate-200'}`}>
-                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); openEdit(tx) }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200" title="Edit">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(tx) }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-900/30 hover:text-red-400" title="Delete">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </Card>
-                  {isExpanded && tx.note && (
-                    <div className="ml-14 mt-1 rounded-xl bg-slate-800/50 px-4 py-2 text-sm text-slate-400">
-                      <Icon name="FileText" size={14} className="inline mr-1 align-middle" /> {tx.note}
                     </div>
                   )}
                 </div>
@@ -268,18 +328,17 @@ export default function Transactions() {
           </div>
         </div>
       ))}
+      </div>
 
       {/* Edit modal */}
       <Modal open={!!editingTx} onClose={() => setEditingTx(null)} title="Edit Transaction">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
-              Category
-            </label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-400">Category</label>
             <select
               value={editCategoryId ?? ''}
               onChange={(e) => setEditCategoryId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 focus:border-green-500 focus:outline-none"
             >
               {editingTx?.type === 'income'
                 ? categoriesByGroup('income').map((c) => (
@@ -291,28 +350,47 @@ export default function Transactions() {
                     ))
                   )}
             </select>
+
+            {/* Category preview chip */}
+            {editCategoryId != null && (() => {
+              const c = getCategoryById(editCategoryId)
+              return c ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${GROUP_COLORS[c.group]}18` }}
+                  >
+                    <Icon name={c.icon} size={16} className={getCategoryIconClassName(c.group)} />
+                  </div>
+                  <span
+                    className="rounded-md px-2 py-0.5 text-xs font-medium"
+                    style={{ backgroundColor: `${GROUP_COLORS[c.group]}1a`, color: GROUP_COLORS[c.group] }}
+                  >
+                    {GROUP_LABELS[c.group]} · {c.name}
+                  </span>
+                </div>
+              ) : null
+            })()}
           </div>
+
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
-              Amount
-            </label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-400">Amount</label>
             <input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 focus:border-green-500 focus:outline-none" />
           </div>
+
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
-              Description
-            </label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-400">Description</label>
             <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 focus:border-green-500 focus:outline-none" />
           </div>
+
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">
-              Note
-            </label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-400">Note</label>
             <textarea value={editNote} onChange={(e) => setEditNote(e.target.value)} rows={2}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none resize-none" />
+              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 focus:border-green-500 focus:outline-none" />
           </div>
+
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => setEditingTx(null)} className="flex-1">Cancel</Button>
             <Button onClick={saveEdit} className="flex-1" disabled={editCategoryId == null}>Save</Button>
