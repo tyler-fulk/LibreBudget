@@ -60,6 +60,7 @@ function clearPinFailures(): void {
 export interface WalletKeys {
   anonymousId: string
   encryptionKey: CryptoKey
+  writeToken: string
 }
 
 interface WalletState {
@@ -94,7 +95,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const persistRaw = localStorage.getItem(PERSIST_STORAGE_KEY)
 
     if (sessionRaw) {
-      let data: { anonymousId: string; keyBase64: string }
+      let data: { anonymousId: string; keyBase64: string; writeToken?: string }
       try {
         data = JSON.parse(sessionRaw)
       } catch {
@@ -105,7 +106,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (data?.anonymousId && data?.keyBase64) {
         importKeyFromSession(data.keyBase64)
           .then((encryptionKey) => {
-            setWalletState({ anonymousId: data.anonymousId, encryptionKey })
+            setWalletState({ anonymousId: data.anonymousId, encryptionKey, writeToken: data.writeToken ?? '' })
           })
           .catch(() => {
             sessionStorage.removeItem(SESSION_STORAGE_KEY)
@@ -127,7 +128,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const keyBase64 = await exportKeyForSession(keys.encryptionKey)
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ anonymousId: keys.anonymousId, keyBase64 })
+        JSON.stringify({ anonymousId: keys.anonymousId, keyBase64, writeToken: keys.writeToken })
       )
     } catch (e) {
       console.error('Failed to persist vault session', e)
@@ -149,7 +150,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const keyBase64 = await exportKeyForSession(keys.encryptionKey)
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ anonymousId: keys.anonymousId, keyBase64 })
+        JSON.stringify({ anonymousId: keys.anonymousId, keyBase64, writeToken: keys.writeToken })
       )
       return true
     } catch {

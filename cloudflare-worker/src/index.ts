@@ -4,6 +4,10 @@
  * Dumb pipe: stores only { id, payload } in KV.
  * Zero-knowledge: never sees seed phrase, keys, or plaintext.
  * Turnstile protects GET /backup/:id (restore) and POST /backup/init (first backup).
+ * Write-token protects POST /backup (sync) and DELETE /backup/:id:
+ *   - On init, SHA-256(writeToken) is stored as "{id}:wth" in KV.
+ *   - Subsequent writes/deletes send the raw token in X-Write-Token; worker
+ *     hashes it and does a constant-time compare against the stored hash.
  */
 
 const DEFAULT_ORIGINS = [
@@ -55,6 +59,46 @@ async function verifyTurnstile(
 	}
 }
 
+/** Returns lowercase hex SHA-256 of the given string. */
+async function sha256Hex(input: string): Promise<string> {
+	const data = new TextEncoder().encode(input);
+	const hash = await crypto.subtle.digest('SHA-256', data);
+	return Array.from(new Uint8Array(hash))
+		.map((b) => b.toString(16).padStart(2, '0'))
+		.join('');
+}
+
+/** Constant-time string comparison (both inputs must be equal-length hex). */
+function constantTimeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) {
+		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	}
+	return diff === 0;
+}
+
+/**
+ * Verifies that the X-Write-Token header matches the SHA-256 hash stored in KV
+ * under "{id}:wth". If no hash exists yet (pre-migration backup), auto-registers
+ * the token — providing forward security from that point on.
+ */
+async function verifyWriteToken(
+	kv: KVNamespace,
+	id: string,
+	token: string | null,
+): Promise<boolean> {
+	if (!token) return false;
+	const incomingHash = await sha256Hex(token);
+	const storedHash = await kv.get(`${id}:wth`);
+	if (!storedHash) {
+		// Migration: first write since upgrade — register the token hash
+		await kv.put(`${id}:wth`, incomingHash);
+		return true;
+	}
+	return constantTimeEqual(incomingHash, storedHash);
+}
+
 function isOriginAllowed(origin: string | null, env: Env): boolean {
 	if (!origin) return false;
 	const o = origin.replace(/\/$/, '');
@@ -73,7 +117,7 @@ function corsHeaders(origin: string | null, env: Env): HeadersInit {
 	return {
 		'Access-Control-Allow-Origin': allowed,
 		'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-		'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token',
+		'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token, X-Write-Token',
 		'Access-Control-Max-Age': '86400',
 	};
 }
@@ -105,7 +149,7 @@ function handleOptions(origin: string | null, env: Env): Response {
 		: {
 				'Access-Control-Allow-Origin': '*',
 				'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-				'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token',
+				'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token, X-Write-Token',
 				'Access-Control-Max-Age': '86400',
 			};
 	return new Response(null, { status: 204, headers });
@@ -142,12 +186,12 @@ export default {
 					'Content-Type': 'application/json',
 					'Access-Control-Allow-Origin': '*',
 					'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-					'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token',
+					'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token, X-Write-Token',
 				},
 			});
 		}
 
-		// POST /backup/init — first backup only, requires Turnstile
+		// POST /backup/init — first backup, requires Turnstile; registers write-token hash
 		if (request.method === 'POST' && url.pathname === '/backup/init') {
 			const token = request.headers.get('X-Turnstile-Token');
 			const valid = await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY, origin);
@@ -160,14 +204,20 @@ export default {
 				);
 			}
 			try {
-				const body = (await request.json()) as { id?: string; payload?: string };
-				const { id: bodyId, payload } = body;
+				const body = (await request.json()) as { id?: string; payload?: string; writeToken?: string };
+				const { id: bodyId, payload, writeToken } = body;
 				if (typeof bodyId !== 'string' || bodyId.trim() === '') {
 					return jsonResponse({ error: 'Missing or invalid id' }, 400, origin, env);
 				}
 				if (typeof payload !== 'string') {
 					return jsonResponse({ error: 'Missing or invalid payload' }, 400, origin, env);
 				}
+				if (typeof writeToken !== 'string' || writeToken.trim() === '') {
+					return jsonResponse({ error: 'Missing or invalid writeToken' }, 400, origin, env);
+				}
+				// Store the hash — never the raw token
+				const writeTokenHash = await sha256Hex(writeToken);
+				await env.LIBRE_BACKUPS.put(`${bodyId.trim()}:wth`, writeTokenHash);
 				return upsertBackup(env.LIBRE_BACKUPS, bodyId, payload, origin, env);
 			} catch {
 				return jsonResponse({ error: 'Invalid JSON' }, 400, origin, env);
@@ -181,7 +231,7 @@ export default {
 
 		const id = pathMatch[1];
 
-		// POST /backup — background sync, no Turnstile (rate-limiting handles abuse)
+		// POST /backup — background sync, requires write-token proof-of-possession
 		if (request.method === 'POST' && !id) {
 			try {
 				const body = (await request.json()) as { id?: string; payload?: string };
@@ -191,6 +241,16 @@ export default {
 				}
 				if (typeof payload !== 'string') {
 					return jsonResponse({ error: 'Missing or invalid payload' }, 400, origin, env);
+				}
+				const writeToken = request.headers.get('X-Write-Token');
+				const authorized = await verifyWriteToken(env.LIBRE_BACKUPS, bodyId.trim(), writeToken);
+				if (!authorized) {
+					return jsonResponse(
+						{ error: 'Unauthorized', hint: 'Write token invalid or not registered. Use POST /backup/init first.' },
+						403,
+						origin,
+						env,
+					);
 				}
 				return upsertBackup(env.LIBRE_BACKUPS, bodyId, payload, origin, env);
 			} catch {
@@ -217,8 +277,21 @@ export default {
 			return textResponse(value, 200, origin, env);
 		}
 
+		// DELETE /backup/:id — requires write-token proof-of-possession
 		if (request.method === 'DELETE' && id) {
-			await env.LIBRE_BACKUPS.delete(decodeURIComponent(id));
+			const writeToken = request.headers.get('X-Write-Token');
+			const decodedId = decodeURIComponent(id);
+			const authorized = await verifyWriteToken(env.LIBRE_BACKUPS, decodedId, writeToken);
+			if (!authorized) {
+				return jsonResponse(
+					{ error: 'Unauthorized', hint: 'Write token invalid or not registered.' },
+					403,
+					origin,
+					env,
+				);
+			}
+			await env.LIBRE_BACKUPS.delete(decodedId);
+			await env.LIBRE_BACKUPS.delete(`${decodedId}:wth`);
 			return jsonResponse({ ok: true }, 200, origin, env);
 		}
 

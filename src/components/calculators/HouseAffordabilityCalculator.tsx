@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Card } from '../ui/Card'
 import { formatCurrency } from '../../utils/calculations'
 import { maxAffordableHomePrice } from '../../utils/houseAffordability'
@@ -36,8 +36,10 @@ export function HouseAffordabilityCalculator() {
         ? parseFloat(defaultStored)
         : 0
 
+  const prefilled = useRef(false)
   useEffect(() => {
-    if (state.agi === '' && budgetForPrefill > 0) {
+    if (!prefilled.current && state.agi === '' && budgetForPrefill > 0) {
+      prefilled.current = true
       updateState({ agi: String(Math.round(budgetForPrefill * 12)) })
     }
   }, [budgetForPrefill, state.agi, updateState])

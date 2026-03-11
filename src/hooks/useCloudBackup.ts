@@ -63,9 +63,11 @@ export function useCloudBackup() {
         const payload = await serializeDatabase()
         const encrypted = await encryptBackup(JSON.stringify(payload), wallet.encryptionKey)
 
+        const headers: HeadersInit = { 'Content-Type': 'application/json' }
+        if (wallet.writeToken) headers['X-Write-Token'] = wallet.writeToken
         const res = await fetch(`${BACKUP_API_URL}/backup`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ id: wallet.anonymousId, payload: encrypted }),
         })
         if (!res.ok) throw new Error('Backup failed')
@@ -102,8 +104,11 @@ export function useCloudBackup() {
     setIsDeleting(true)
     setError(null)
     try {
+      const deleteHeaders: HeadersInit = {}
+      if (wallet.writeToken) deleteHeaders['X-Write-Token'] = wallet.writeToken
       const res = await fetch(`${BACKUP_API_URL}/backup/${encodeURIComponent(wallet.anonymousId)}`, {
         method: 'DELETE',
+        headers: deleteHeaders,
       })
       if (!res.ok) throw new Error('Delete failed')
       return { error: null }

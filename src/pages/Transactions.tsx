@@ -240,7 +240,6 @@ export default function Transactions() {
             {grouped[date].map((tx, idx) => {
               const cat = getCategoryById(tx.categoryId)
               const isExpanded = expandedTx === tx.id
-              const isLast = idx === grouped[date].length - 1
 
               return (
                 <div key={tx.id}>

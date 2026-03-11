@@ -625,7 +625,7 @@ export default function Settings() {
       <Card>
         <h3 className="mb-3 text-sm font-medium text-slate-400">About</h3>
         <p className="text-sm text-slate-300">
-          <strong>LibreBudget</strong> v1.1
+          <strong>LibreBudget</strong> v1.1.2
         </p>
         <p className="mt-1 mb-4 text-xs text-slate-500">
           Free, open-source budget tracker.

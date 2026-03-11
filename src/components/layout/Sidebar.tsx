@@ -109,7 +109,7 @@ export function Sidebar() {
           <span>·</span>
           <NavLink to="/terms" className="text-slate-500 hover:text-green-400">Terms</NavLink>
         </div>
-        <p className="text-xs text-slate-500">LibreBudget v1.1</p>
+        <p className="text-xs text-slate-500">LibreBudget v1.1.2</p>
       </div>
     </aside>
     </>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -33,6 +34,7 @@ export default function DebtTracker() {
   const [notes, setNotes] = useState('')
   const [annualFee, setAnnualFee] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [expandedDebt, setExpandedDebt] = useState<number | null>(null)
 
   const resetForm = () => {
     setName('')
@@ -207,21 +209,24 @@ export default function DebtTracker() {
       )}
 
       {debts.length > 0 && (
-        <Card>
-          <div className="flex items-center justify-between mb-4">
+        <div className="space-y-3">
+          {/* Strategy toggle */}
+          <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-slate-400">Payoff Strategy</h3>
-            <div className="flex gap-1 rounded-xl bg-slate-800 p-1">
+            <div className="flex gap-1 rounded-xl bg-slate-900 border border-slate-800 p-1">
               <button
                 onClick={() => setStrategy('avalanche')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${strategy === 'avalanche' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
-              >Avalanche (highest rate)</button>
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${strategy === 'avalanche' ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'}`}
+              >Avalanche</button>
               <button
                 onClick={() => setStrategy('snowball')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${strategy === 'snowball' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
-              >Snowball (lowest balance)</button>
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${strategy === 'snowball' ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'}`}
+              >Snowball</button>
             </div>
           </div>
-          <div className="space-y-3">
+
+          {/* Debt rows */}
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
             {orderedDebts.map((debt, i) => {
               const schedule = getPayoffSchedule(debt)
               const monthsLeft = schedule.length
@@ -234,101 +239,158 @@ export default function DebtTracker() {
                 ? calcRequiredPayment(debt.balance, debt.interestRate, debt.targetPayoffDate)
                 : null
               const targetDatePassed = debt.targetPayoffDate && reqForTarget === null && debt.balance > 0
+              const isExpanded = expandedDebt === debt.id
+              const coveringInterest = effPayment >= debt.balance * (debt.interestRate / 100 / 12)
 
               return (
-                <div key={debt.id} className={`rounded-xl p-3 ${isPaidOff ? 'bg-green-900/20' : 'bg-slate-800/50'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-400">
-                      {isPaidOff ? <Icon name="Check" size={16} className="text-green-400" /> : `#${i + 1}`}
+                <div key={debt.id}>
+                  {i > 0 && <div className="border-t border-slate-800" />}
+
+                  {/* Main tap row */}
+                  <button
+                    className={`tx-row flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-slate-800 ${isExpanded ? 'bg-slate-800/60' : ''}`}
+                    onClick={() => setExpandedDebt(isExpanded ? null : (debt.id ?? null))}
+                  >
+                    {/* Rank + icon */}
+                    <div className="relative shrink-0">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPaidOff ? 'bg-green-500/15' : 'bg-slate-800'}`}>
+                        <Icon name={debt.icon || 'TrendingDown'} size={20} className={isPaidOff ? 'text-green-400' : 'text-slate-300'} />
+                      </div>
+                      {!isPaidOff && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-700 text-[9px] font-bold text-slate-400">
+                          {i + 1}
+                        </span>
+                      )}
+                      {isPaidOff && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500/20">
+                          <Icon name="Check" size={9} className="text-green-400" />
+                        </span>
+                      )}
                     </div>
-                    <Icon name={debt.icon || 'TrendingDown'} size={24} className="shrink-0" />
+
+                    {/* Name + chips */}
                     <div className="min-w-0 flex-1">
-                      <p className={`font-medium ${isPaidOff ? 'text-green-400 line-through' : 'text-slate-200'}`}>
+                      <p className={`truncate text-sm font-medium leading-snug ${isPaidOff ? 'text-green-400 line-through' : 'text-slate-200'}`}>
                         {debt.name}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {debt.interestRate}% APR · {formatCurrency(debt.minimumPayment)}/mo min
-                        {effPayment > debt.minimumPayment && (
-                          <span className="text-green-400"> · Target: {formatCurrency(effPayment)}/mo</span>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                        <span className="rounded-md bg-slate-800 px-1.5 py-px text-xs text-slate-400">
+                          {debt.interestRate}% APR
+                        </span>
+                        <span className="rounded-md bg-slate-800 px-1.5 py-px text-xs text-slate-400">
+                          {formatCurrency(debt.minimumPayment)}/mo
+                        </span>
+                        {!coveringInterest && !isPaidOff && (
+                          <span className="rounded-md bg-amber-500/15 px-1.5 py-px text-xs text-amber-400">
+                            ⚠ interest
+                          </span>
                         )}
-                        {debt.dueDay != null && ` · Due day ${debt.dueDay}`}
-                        {debt.annualFee != null && debt.annualFee > 0 && (
-                          <span className="text-slate-400"> · {formatCurrency(debt.annualFee)}/yr fee</span>
-                        )}
-                        {monthsLeft > 0 && !isPaidOff && (
-                          <>
-                            · {monthsLeft} mo left · {formatCurrency(interestCost)} interest
-                            {effPayment < debt.balance * (debt.interestRate / 100 / 12) && (
-                              <span className="text-amber-400 ml-0.5"> · Min payment may not cover interest</span>
-                            )}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className={`font-semibold ${isPaidOff ? 'text-green-400' : 'text-slate-200'}`}>
-                        {formatCurrency(debt.balance)}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => openEdit(debt)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                        title="Edit"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      {!isPaidOff && (
-                        <button
-                          onClick={() => { setShowPayment(debt.id!); setPaymentAmount('') }}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-green-400 text-xs"
-                          title="Make payment"
-                        >💸</button>
-                      )}
-                      <button
-                        onClick={() => debt.id && deleteDebt(debt.id)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-900/30 hover:text-red-400"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  {!isPaidOff && (
-                    <div className="mt-2 ml-11 space-y-1">
-                      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 rounded-full transition-all duration-300"
-                          style={{ width: `${paidPercent}%` }}
-                        />
                       </div>
-                      {debt.targetPayoffDate && (
-                        <p className="text-[10px] text-slate-500">
+                    </div>
+
+                    {/* Balance + chevron */}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className={`text-sm font-semibold tabular-nums ${isPaidOff ? 'text-green-400' : 'text-slate-200'}`}>
+                        {formatCurrency(debt.balance)}
+                      </span>
+                      <ChevronDown
+                        size={13}
+                        strokeWidth={1.75}
+                        className={`text-slate-600 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Expanded panel */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-800 bg-slate-800/40 px-3.5 py-3 space-y-3">
+                      {/* Progress bar */}
+                      {!isPaidOff && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>{paidPercent.toFixed(0)}% paid off</span>
+                            {monthsLeft > 0 && (
+                              <span>{monthsLeft} mo · {formatCurrency(interestCost)} interest</span>
+                            )}
+                          </div>
+                          <div className="h-1.5 rounded-full bg-slate-700 overflow-hidden progress-track">
+                            <div
+                              className="h-full bg-green-500 rounded-full transition-all duration-300"
+                              style={{ width: `${paidPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Goal / target info */}
+                      {debt.targetPayoffDate && !isPaidOff && (
+                        <p className="text-xs text-slate-500">
                           {targetDatePassed ? (
                             <span className="text-amber-400">Goal date has passed — update target or pay in full</span>
                           ) : reqForTarget != null ? (
                             <>
-                              Goal: paid off by {debt.targetPayoffDate} · Requires {formatCurrency(reqForTarget)}/mo
+                              Target: {debt.targetPayoffDate} · needs {formatCurrency(reqForTarget)}/mo
                               {effPayment < reqForTarget && (
-                                <span className="text-amber-400 ml-1">(add {formatCurrency(reqForTarget - effPayment)}/mo)</span>
+                                <span className="text-amber-400 ml-1">(+{formatCurrency(reqForTarget - effPayment)}/mo)</span>
                               )}
                             </>
                           ) : null}
                         </p>
                       )}
+
+                      {/* Extra details */}
+                      {(debt.dueDay != null || (debt.annualFee != null && debt.annualFee > 0) || effPayment > debt.minimumPayment) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {debt.dueDay != null && (
+                            <span className="rounded-md bg-slate-700 px-2 py-1 text-xs text-slate-400">Due day {debt.dueDay}</span>
+                          )}
+                          {debt.annualFee != null && debt.annualFee > 0 && (
+                            <span className="rounded-md bg-slate-700 px-2 py-1 text-xs text-slate-400">{formatCurrency(debt.annualFee)}/yr fee</span>
+                          )}
+                          {effPayment > debt.minimumPayment && (
+                            <span className="rounded-md bg-green-500/15 px-2 py-1 text-xs text-green-400">Target {formatCurrency(effPayment)}/mo</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes */}
                       {debt.notes && (
                         <p className="text-xs text-slate-500 italic">{debt.notes}</p>
                       )}
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(debt)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-700 py-2 text-sm font-medium text-slate-200 transition-colors active:bg-slate-600"
+                        >
+                          <Icon name="Pencil" size={14} />
+                          Edit
+                        </button>
+                        {!isPaidOff && (
+                          <button
+                            onClick={() => { setShowPayment(debt.id!); setPaymentAmount('') }}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600/20 py-2 text-sm font-medium text-green-400 transition-colors active:bg-green-600/30"
+                          >
+                            <Icon name="Banknote" size={14} />
+                            Pay
+                          </button>
+                        )}
+                        <button
+                          onClick={() => debt.id && deleteDebt(debt.id)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-700 py-2 text-sm font-medium text-red-400 transition-colors active:bg-slate-600"
+                        >
+                          <Icon name="Trash2" size={14} />
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               )
             })}
           </div>
-        </Card>
+        </div>
       )}
 
       {debts.length === 0 && (
@@ -338,85 +400,71 @@ export default function DebtTracker() {
       )}
 
       <Modal open={showModal} onClose={() => { setShowModal(false); resetForm() }} title={modalTitle}>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
-            <div className="flex flex-wrap gap-1.5">
-              {DEBT_ICONS.map((i) => (
-                <button key={i} onClick={() => setIcon(i)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
-                >
-                  <Icon name={i} size={18} />
-                </button>
-              ))}
-            </div>
+        <div className="space-y-3">
+          {/* Type selector */}
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {DEBT_ICONS.map((i) => (
+              <button key={i} onClick={() => setIcon(i)}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
+              >
+                <Icon name={i} size={18} />
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Student Loan" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Balance</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                <input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 focus:border-green-500 focus:outline-none" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Interest Rate (%)</label>
-              <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)}
-                placeholder="0" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Minimum Monthly Payment</label>
+
+          {/* Name */}
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            placeholder="Debt name" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+
+          {/* Balance + APR */}
+          <div className="grid grid-cols-2 gap-2">
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+              <input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}
+                placeholder="Balance" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+            </div>
+            <div className="relative">
+              <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)}
+                placeholder="APR" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-4 pr-7 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">%</span>
+            </div>
+          </div>
+
+          {/* Min payment + Due day */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
               <input type="number" step="0.01" value={minPayment} onChange={(e) => setMinPayment(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-8 pr-4 text-slate-100 focus:border-green-500 focus:outline-none" />
+                placeholder="Min. payment" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
+            <input type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)}
+              placeholder="Due day (1–31)" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Payoff Date</label>
-              <input type="month" value={targetPayoffDate} onChange={(e) => setTargetPayoffDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+
+          {/* Target payment + Target date */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+              <input type="number" step="0.01" value={targetMonthlyPayment} onChange={(e) => setTargetMonthlyPayment(e.target.value)}
+                placeholder="Target pay" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Monthly Payment</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                <input type="number" step="0.01" value={targetMonthlyPayment} onChange={(e) => setTargetMonthlyPayment(e.target.value)}
-                  placeholder="Optional extra" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-              </div>
+            <input type="month" value={targetPayoffDate} onChange={(e) => setTargetPayoffDate(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+          </div>
+
+          {/* Annual fee – credit cards only */}
+          {icon === 'CreditCard' && (
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+              <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
+                placeholder="Annual fee" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Payment Due Day (1–31)</label>
-              <input type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)}
-                placeholder="e.g. 15" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-            </div>
-            {icon === 'CreditCard' && (
-              <div>
-                <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Annual Fee</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                  <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
-                    placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-                </div>
-              </div>
-            )}
-            {icon !== 'CreditCard' && <div />}
-          </div>
-          <div>
-            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-              placeholder="Optional notes" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none resize-none" />
-          </div>
+          )}
+
+          {/* Notes */}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+            placeholder="Notes (optional)" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none resize-none" />
+
           {editingDebt ? (
             <Button onClick={handleUpdate} className="w-full" disabled={!name.trim() || !balance || !minPayment}>Save Changes</Button>
           ) : (

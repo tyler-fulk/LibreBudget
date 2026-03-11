@@ -24,8 +24,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="relative w-full max-w-md max-h-[85dvh] flex flex-col rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div className="shrink-0 p-6 pb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
           <button
             onClick={onClose}
@@ -36,7 +36,9 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             </svg>
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto overscroll-contain px-6 pb-6">
+          {children}
+        </div>
       </div>
     </div>
   )

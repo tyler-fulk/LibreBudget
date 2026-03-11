@@ -45,7 +45,7 @@ export default function GenerateWallet() {
     setError(null)
     setLoading(true)
     try {
-      const { anonymousId, encryptionKey } = await deriveKeys(mnemonic)
+      const { anonymousId, encryptionKey, writeToken } = await deriveKeys(mnemonic)
       if (BACKUP_API_URL && turnstileToken) {
         const payload = await serializeDatabase()
         const encrypted = await encryptBackup(JSON.stringify(payload), encryptionKey)
@@ -55,7 +55,7 @@ export default function GenerateWallet() {
             'Content-Type': 'application/json',
             'X-Turnstile-Token': turnstileToken,
           },
-          body: JSON.stringify({ id: anonymousId, payload: encrypted }),
+          body: JSON.stringify({ id: anonymousId, payload: encrypted, writeToken }),
         })
         if (!res.ok) {
           const body = await res.json().catch(() => ({})) as { error?: string; hint?: string }
@@ -63,7 +63,7 @@ export default function GenerateWallet() {
           throw new Error(body.hint ? `${msg}. ${body.hint}` : msg)
         }
       }
-      const keys = { anonymousId, encryptionKey }
+      const keys = { anonymousId, encryptionKey, writeToken }
       setWallet(keys)
       setKeysForPin(keys)
       setShowPinModal(true)

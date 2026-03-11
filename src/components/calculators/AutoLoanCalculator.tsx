@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '../ui/Card'
 import { formatCurrency, getCurrentMonth } from '../../utils/calculations'
 import {
@@ -43,12 +43,11 @@ export function AutoLoanCalculator() {
   const [downPaymentPercent, setDownPaymentPercent] = useState('20')
   const [interestRate, setInterestRate] = useState('')
   const [loanTermMonths, setLoanTermMonths] = useState('36')
-  const [monthlyIncome, setMonthlyIncome] = useState(() =>
-    budgetForPrefill > 0 ? String(Math.round(budgetForPrefill)) : ''
-  )
-
+  const [monthlyIncome, setMonthlyIncome] = useState('')
+  const prefilled = useRef(false)
   useEffect(() => {
-    if (monthlyIncome === '' && budgetForPrefill > 0) {
+    if (!prefilled.current && monthlyIncome === '' && budgetForPrefill > 0) {
+      prefilled.current = true
       setMonthlyIncome(String(Math.round(budgetForPrefill)))
     }
   }, [budgetForPrefill, monthlyIncome])

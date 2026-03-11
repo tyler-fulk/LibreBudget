@@ -264,6 +264,14 @@ html.light *::-webkit-scrollbar-thumb:hover {
   .mobile-scroll-padding {
     padding-bottom: calc(5rem + max(env(safe-area-inset-bottom), 0.75rem));
   }
+
+  /* Hide all scrollbars on mobile */
+  * {
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
+  }
 }
 html.light .scrollbar-thin {
   scrollbar-color: #64748b transparent;

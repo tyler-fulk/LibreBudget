@@ -39,8 +39,8 @@ export default function RestoreWallet() {
     setError(null)
     setLoading(true)
     try {
-      const { anonymousId, encryptionKey } = await deriveKeys(normalized)
-      const keys = { anonymousId, encryptionKey }
+      const { anonymousId, encryptionKey, writeToken } = await deriveKeys(normalized)
+      const keys = { anonymousId, encryptionKey, writeToken }
       setWallet(keys)
 
       if (BACKUP_API_URL) {

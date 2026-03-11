@@ -3,6 +3,7 @@ import { wordlist } from '@scure/bip39/wordlists/english'
 
 const STORAGE_ID_INFO = 'LibreBudget-Storage-ID-v1'
 const ENCRYPTION_KEY_INFO = 'LibreBudget-Encryption-Key-v1'
+const WRITE_TOKEN_INFO = 'LibreBudget-Write-Token-v1'
 const IV_LENGTH = 12
 const CHUNK = 0x8000
 const PIN_ITERATIONS = 200_000
@@ -36,7 +37,7 @@ export function generateWallet(): string {
  */
 export async function deriveKeys(
   mnemonic: string
-): Promise<{ anonymousId: string; encryptionKey: CryptoKey }> {
+): Promise<{ anonymousId: string; encryptionKey: CryptoKey; writeToken: string }> {
   const seed = mnemonicToSeedSync(mnemonic)
   const seedBytes = new Uint8Array(seed)
 
@@ -48,31 +49,24 @@ export async function deriveKeys(
     ['deriveBits']
   )
 
-  const storageIdBits = await crypto.subtle.deriveBits(
-    {
-      name: 'HKDF',
-      hash: 'SHA-256',
-      salt: new Uint8Array(0),
-      info: new TextEncoder().encode(STORAGE_ID_INFO),
-    },
-    baseKey,
-    256
-  )
+  const derive = (info: string) =>
+    crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: new TextEncoder().encode(info) },
+      baseKey,
+      256
+    )
 
-  const encryptionKeyBits = await crypto.subtle.deriveBits(
-    {
-      name: 'HKDF',
-      hash: 'SHA-256',
-      salt: new Uint8Array(0),
-      info: new TextEncoder().encode(ENCRYPTION_KEY_INFO),
-    },
-    baseKey,
-    256
-  )
+  const [storageIdBits, encryptionKeyBits, writeTokenBits] = await Promise.all([
+    derive(STORAGE_ID_INFO),
+    derive(ENCRYPTION_KEY_INFO),
+    derive(WRITE_TOKEN_INFO),
+  ])
 
-  const anonymousId = Array.from(new Uint8Array(storageIdBits))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
+  const toHex = (buf: ArrayBuffer) =>
+    Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
+
+  const anonymousId = toHex(storageIdBits)
+  const writeToken = toHex(writeTokenBits)
 
   const encryptionKey = await crypto.subtle.importKey(
     'raw',
@@ -82,7 +76,7 @@ export async function deriveKeys(
     ['encrypt', 'decrypt']
   )
 
-  return { anonymousId, encryptionKey }
+  return { anonymousId, encryptionKey, writeToken }
 }
 
 /**
@@ -171,6 +165,7 @@ export async function deriveKeyFromPin(
 export interface WalletKeysForPin {
   anonymousId: string
   encryptionKey: CryptoKey
+  writeToken: string
 }
 
 /**
@@ -186,7 +181,7 @@ export async function encryptVaultForPin(
   const kek = await deriveKeyFromPin(pin, salt)
   const keyBase64 = await exportKeyForSession(keys.encryptionKey)
   const plaintext = new TextEncoder().encode(
-    JSON.stringify({ anonymousId: keys.anonymousId, keyBase64 })
+    JSON.stringify({ anonymousId: keys.anonymousId, keyBase64, writeToken: keys.writeToken })
   )
   const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: new Uint8Array(iv) },
@@ -208,7 +203,7 @@ export async function encryptVaultForPin(
 export async function decryptVaultWithPin(
   blob: string,
   pin: string
-): Promise<{ anonymousId: string; encryptionKey: CryptoKey }> {
+): Promise<{ anonymousId: string; encryptionKey: CryptoKey; writeToken: string }> {
   const parsed = JSON.parse(blob) as { v?: number; salt?: string; iv?: string; ct?: string }
   if (parsed?.v !== 1 || !parsed.salt || !parsed.iv || !parsed.ct) {
     throw new Error('Invalid vault data')
@@ -224,12 +219,13 @@ export async function decryptVaultWithPin(
   )
   const payload = JSON.parse(
     new TextDecoder().decode(decrypted)
-  ) as { anonymousId: string; keyBase64: string }
+  ) as { anonymousId: string; keyBase64: string; writeToken?: string }
   if (!payload?.anonymousId || !payload?.keyBase64) {
     throw new Error('Invalid vault payload')
   }
   const encryptionKey = await importKeyFromSession(payload.keyBase64)
-  return { anonymousId: payload.anonymousId, encryptionKey }
+  // writeToken may be absent in vaults created before this field was added
+  return { anonymousId: payload.anonymousId, encryptionKey, writeToken: payload.writeToken ?? '' }
 }
 
 /**
