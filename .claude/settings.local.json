@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(grep:*)",
-      "Bash(node -e \"\nconst { runMonteCarloSimulation } = require\\('./src/utils/monteCarlo.ts'\\);\n\" 2>&1 | head -5)"
-    ]
-  }
-}
