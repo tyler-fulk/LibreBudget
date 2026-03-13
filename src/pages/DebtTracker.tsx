@@ -28,7 +28,7 @@ export default function DebtTracker() {
   const [balance, setBalance] = useState('')
   const [rate, setRate] = useState('')
   const [minPayment, setMinPayment] = useState('')
-  const [targetPayoffDate, setTargetPayoffDate] = useState('')
+  const [targetPayoffDate, setTargetPayoffDate] = useState(format(new Date(), 'yyyy-MM'))
   const [targetMonthlyPayment, setTargetMonthlyPayment] = useState('')
   const [dueDay, setDueDay] = useState('')
   const [notes, setNotes] = useState('')
@@ -42,7 +42,7 @@ export default function DebtTracker() {
     setBalance('')
     setRate('')
     setMinPayment('')
-    setTargetPayoffDate('')
+    setTargetPayoffDate(format(new Date(), 'yyyy-MM'))
     setTargetMonthlyPayment('')
     setDueDay('')
     setNotes('')
@@ -400,70 +400,100 @@ export default function DebtTracker() {
       )}
 
       <Modal open={showModal} onClose={() => { setShowModal(false); resetForm() }} title={modalTitle}>
-        <div className="space-y-3">
-          {/* Type selector */}
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {DEBT_ICONS.map((i) => (
-              <button key={i} onClick={() => setIcon(i)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
-              >
-                <Icon name={i} size={18} />
-              </button>
-            ))}
+        <div className="space-y-4">
+          {/* Icon */}
+          <div>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Icon</label>
+            <div className="flex flex-wrap gap-1.5">
+              {DEBT_ICONS.map((i) => (
+                <button key={i} onClick={() => setIcon(i)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${icon === i ? 'bg-slate-700 ring-2 ring-green-500 text-green-400' : 'hover:bg-slate-800 text-slate-400'}`}
+                >
+                  <Icon name={i} size={18} />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Name */}
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Debt name" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+          <div>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Chase Visa" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+          </div>
 
           {/* Balance + APR */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}
-                placeholder="Balance" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Balance</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}
+                  placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              </div>
             </div>
-            <div className="relative">
-              <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)}
-                placeholder="APR" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-4 pr-7 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">%</span>
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">APR</label>
+              <div className="relative">
+                <input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)}
+                  placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-4 pr-7 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">%</span>
+              </div>
             </div>
           </div>
 
           {/* Min payment + Due day */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input type="number" step="0.01" value={minPayment} onChange={(e) => setMinPayment(e.target.value)}
-                placeholder="Min. payment" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Min. Payment</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input type="number" step="0.01" value={minPayment} onChange={(e) => setMinPayment(e.target.value)}
+                  placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              </div>
             </div>
-            <input type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)}
-              placeholder="Due day (1–31)" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Due Day</label>
+              <input type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)}
+                placeholder="1–31" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+            </div>
           </div>
 
           {/* Target payment + Target date */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input type="number" step="0.01" value={targetMonthlyPayment} onChange={(e) => setTargetMonthlyPayment(e.target.value)}
-                placeholder="Target pay" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Target Payment</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input type="number" step="0.01" value={targetMonthlyPayment} onChange={(e) => setTargetMonthlyPayment(e.target.value)}
+                  placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              </div>
             </div>
-            <input type="month" value={targetPayoffDate} onChange={(e) => setTargetPayoffDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Payoff Date</label>
+              <input type="month" value={targetPayoffDate} onChange={(e) => setTargetPayoffDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 focus:border-green-500 focus:outline-none" />
+            </div>
           </div>
 
           {/* Annual fee – credit cards only */}
           {icon === 'CreditCard' && (
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
-                placeholder="Annual fee" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+            <div>
+              <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Annual Fee</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input type="number" step="0.01" value={annualFee} onChange={(e) => setAnnualFee(e.target.value)}
+                  placeholder="0.00" className="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-7 pr-3 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none" />
+              </div>
             </div>
           )}
 
           {/* Notes */}
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-            placeholder="Notes (optional)" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none resize-none" />
+          <div>
+            <label className="mb-1 flex items-center gap-2 text-sm text-slate-400">Notes</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              placeholder="Optional" className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none resize-none" />
+          </div>
 
           {editingDebt ? (
             <Button onClick={handleUpdate} className="w-full" disabled={!name.trim() || !balance || !minPayment}>Save Changes</Button>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card } from '../ui/Card'
+import { InfoTip } from '../ui/InfoTip'
 import { useFinancialRiskScore } from '../../hooks/useFinancialRiskScore'
 import type { Finding, Severity } from '../../utils/financialRiskScore'
 
@@ -77,21 +78,14 @@ export function FinancialHealthScore() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-slate-400">Financial Health Score</h3>
-          <div className="relative group/tip">
-            <span className="inline-flex cursor-help">
-              <svg className="h-3.5 w-3.5 text-slate-500 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-              </svg>
-            </span>
-            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-lg z-10 opacity-0 pointer-events-none group-hover/tip:opacity-100 group-hover/tip:pointer-events-auto transition-opacity duration-150 space-y-2">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Modeled after the Common Vulnerability Scoring System (CVSS). Client-side algorithms scan your decrypted data for single points of failure: income concentration, low emergency fund, high debt-to-income, poor credit, budget overrun, and more. Each finding is flagged as High, Medium, or Low severity.
-              </p>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                <strong className="text-slate-300">Scale:</strong> 10 = no risks. Key checks (budget overrun, emergency fund, debt-to-income) use proportional deductions that grow with severity — up to 3.0 pts each. Other findings use flat deductions: High −3.0, Medium −1.5, Low −0.5. Grades: Minimal (9–10), Low (7–8.9), Medium (5–6.9), High (3–4.9), Critical (0–2.9).
-              </p>
-            </div>
-          </div>
+          <InfoTip>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Modeled after the Common Vulnerability Scoring System (CVSS). Client-side algorithms scan your decrypted data for single points of failure: income concentration, low emergency fund, high debt-to-income, poor credit, budget overrun, and more. Each finding is flagged as High, Medium, or Low severity.
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed mt-1.5">
+              <strong className="text-slate-300">Scale:</strong> 10 = no risks. Key checks (budget overrun, emergency fund, debt-to-income) use proportional deductions that grow with severity — up to 3.0 pts each. Other findings use flat deductions: High −3.0, Medium −1.5, Low −0.5. Grades: Minimal (9-10), Low (7-8.9), Medium (5-6.9), High (3-4.9), Critical (0-2.9).
+            </p>
+          </InfoTip>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-bold text-slate-100">{score.toFixed(1)}</span>

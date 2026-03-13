@@ -41,8 +41,9 @@ export default function RestoreWallet() {
     try {
       const { anonymousId, encryptionKey, writeToken } = await deriveKeys(normalized)
       const keys = { anonymousId, encryptionKey, writeToken }
-      setWallet(keys)
 
+      // Fetch and hydrate cloud backup BEFORE activating the wallet,
+      // so auto-backup hooks don't fire on partially-hydrated data.
       if (BACKUP_API_URL) {
         const headers: HeadersInit = {}
         if (turnstileToken) headers['X-Turnstile-Token'] = turnstileToken
@@ -72,6 +73,8 @@ export default function RestoreWallet() {
         }
       }
 
+      // Activate wallet only after hydration is complete
+      setWallet(keys)
       setKeysForPin(keys)
       setShowPinModal(true)
     } catch (err) {

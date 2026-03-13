@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
 import { Onboarding } from './components/Onboarding'
+import { MonthlyAudit } from './components/MonthlyAudit'
 import { useNotifications } from './hooks/useNotifications'
 import Dashboard from './pages/Dashboard'
 import AddTransaction from './pages/AddTransaction'
@@ -31,6 +32,7 @@ export default function App() {
   return (
     <>
       <Onboarding />
+      <MonthlyAudit />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />

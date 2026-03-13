@@ -36,6 +36,7 @@ export default function Account() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [lockConfirm, setLockConfirm] = useState(false)
 
   if (!BACKUP_API_URL) {
     return (
@@ -175,16 +176,38 @@ export default function Account() {
           </div>
 
           {/* Lock vault button */}
-          <button
-            onClick={clearWallet}
-            className="tx-row flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-800"
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-800">
-              <Icon name="Lock" size={15} className="text-slate-400" />
+          {!lockConfirm ? (
+            <button
+              onClick={() => setLockConfirm(true)}
+              className="tx-row flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-800"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-800">
+                <Icon name="Lock" size={15} className="text-slate-400" />
+              </div>
+              <span className="flex-1 text-sm text-slate-300">Lock Vault</span>
+              <Icon name="ChevronRight" size={15} className="text-slate-600" />
+            </button>
+          ) : (
+            <div className="px-4 py-3 space-y-2">
+              <p className="text-sm text-amber-400">Locking your vault will sign you out and clear all data on this device. You can restore it anytime with your recovery phrase.</p>
+              {lastBackupAt && (
+                <p className="text-xs text-slate-500">Last backup: {format(new Date(lastBackupAt), 'MMM d, yyyy h:mm a')}</p>
+              )}
+              {!lastBackupAt && (
+                <p className="text-xs text-red-400">No cloud backup found. You may lose all data.</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLockConfirm(false)}
+                  className="flex-1 rounded-lg bg-slate-800 py-2 text-sm font-medium text-slate-300 active:bg-slate-700"
+                >Cancel</button>
+                <button
+                  onClick={clearWallet}
+                  className="flex-1 rounded-lg bg-red-600/20 py-2 text-sm font-medium text-red-400 active:bg-red-600/30"
+                >Lock & Erase</button>
+              </div>
             </div>
-            <span className="flex-1 text-sm text-slate-300">Lock Vault</span>
-            <Icon name="ChevronRight" size={15} className="text-slate-600" />
-          </button>
+          )}
         </Card>
 
         {/* Cloud Backup card */}

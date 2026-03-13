@@ -3,6 +3,8 @@ import type { ContributionFrequency } from '../utils/compoundInterest'
 
 export type CalculatorMode = 'standard' | 'goalSeeker' | 'autoLoan' | 'houseAffordability'
 
+export type WithdrawalMode = 'rate' | 'income'
+
 export interface CalculatorState {
   mode: CalculatorMode
   initialBalance: string
@@ -10,10 +12,21 @@ export interface CalculatorState {
   contributionFrequency: ContributionFrequency
   years: string
   annualRate: string
-  desiredAnnualIncome: string
+  withdrawalMode: WithdrawalMode
   withdrawalRatePercent: number
+  desiredAnnualIncome: string
   currentAge: string
   targetRetirementAge: number
+  contributionAnnualIncrease: string
+  // Monte Carlo fields
+  returnStdDev: string
+  inflationMean: string
+  inflationStdDev: string
+  annualFee: string
+  endAge: string
+  numTrials: string
+  useVariableLongevity: boolean
+  useRegimeSwitching: boolean
 }
 
 const DEFAULT_STATE: CalculatorState = {
@@ -23,10 +36,21 @@ const DEFAULT_STATE: CalculatorState = {
   contributionFrequency: 'monthly',
   years: '',
   annualRate: '',
-  desiredAnnualIncome: '',
+  withdrawalMode: 'rate',
   withdrawalRatePercent: 4,
+  desiredAnnualIncome: '',
   currentAge: '',
   targetRetirementAge: 65,
+  contributionAnnualIncrease: '0',
+  // Monte Carlo defaults
+  returnStdDev: '15',
+  inflationMean: '3',
+  inflationStdDev: '1',
+  annualFee: '0.5',
+  endAge: '90',
+  numTrials: '10000',
+  useVariableLongevity: false,
+  useRegimeSwitching: false,
 }
 
 export function useCalculatorState() {

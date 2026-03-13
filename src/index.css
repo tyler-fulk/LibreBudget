@@ -259,6 +259,21 @@ html.light *::-webkit-scrollbar-thumb:hover {
   html.theme-purple .tx-row:hover    { background-color: #2d2878; }
 }
 
+/* iOS: reset native date/month input styling */
+input[type="date"],
+input[type="month"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-height: 2.75rem;
+  line-height: 1.25;
+  color-scheme: dark;
+}
+html.light input[type="date"],
+html.light input[type="month"] {
+  color-scheme: light;
+}
+
 /* Mobile: safe-area-aware bottom padding for main content */
 @media (max-width: 767px) {
   .mobile-scroll-padding {

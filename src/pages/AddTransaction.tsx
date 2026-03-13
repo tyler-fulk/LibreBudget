@@ -7,6 +7,7 @@ import { Modal } from '../components/ui/Modal'
 import { useCategories } from '../hooks/useCategories'
 import { useTransactions } from '../hooks/useTransactions'
 import { useSavingsGoals } from '../hooks/useSavingsGoals'
+import { useDebts } from '../hooks/useDebts'
 import { EXPENSE_GROUPS, type CategoryGroup } from '../db/database'
 import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
 import { GROUP_LABELS, GROUP_COLORS, getCategoryIconClassName } from '../utils/colors'
@@ -24,9 +25,10 @@ const SAVINGS_TYPE_LABELS: Record<string, string> = {
 
 export default function AddTransaction() {
   const navigate = useNavigate()
-  const { categoriesByGroup } = useCategories()
+  const { categoriesByGroup, categories } = useCategories()
   const { transactions, addTransaction } = useTransactions()
   const { goals, addFunds } = useSavingsGoals()
+  const { debts, updateDebt } = useDebts()
 
   const [type, setType] = useState<TabType>('expense')
   const [amount, setAmount] = useState('')
@@ -36,8 +38,27 @@ export default function AddTransaction() {
   const [description, setDescription] = useState('')
   const [note, setNote] = useState('')
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [debtId, setDebtId] = useState<number | null>(null)
+  const [linkedGoalId, setLinkedGoalId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState(false)
+
+  const selectedCategory = categoryId ? categories.find((c) => c.id === categoryId) : null
+  const catName = selectedCategory?.name ?? ''
+
+  // Debt linking
+  const isDebtPayoff = catName === 'Debt Payoff'
+  const isTransportation = catName === 'Transportation'
+  const showDebtSelector = isDebtPayoff || isTransportation
+  const activeDebts = debts.filter((d) => d.balance > 0 && (!isTransportation || d.icon === 'Car'))
+
+  // Savings linking
+  const SAVINGS_CATEGORIES = new Set(['Savings', 'Retirement', 'Stocks', 'Emergency Fund'])
+  const isSavingsCategory = SAVINGS_CATEGORIES.has(catName)
+  const linkableGoals = goals.filter((g) => {
+    if (catName === 'Emergency Fund') return g.type === 'emergency_fund'
+    return true
+  })
 
   const savingsGoalsAvailable = goals.filter(
     (g) => g.type !== 'goal' || g.currentAmount < g.targetAmount,
@@ -112,10 +133,27 @@ export default function AddTransaction() {
       note,
       date,
     })
+
+    // Apply payment to selected debt
+    if (showDebtSelector && debtId) {
+      const debt = debts.find((d) => d.id === debtId)
+      if (debt) {
+        const newBalance = Math.max(0, debt.balance - parseFloat(amount))
+        await updateDebt(debtId, { balance: newBalance })
+      }
+    }
+
+    // Apply funds to linked savings goal
+    if (isSavingsCategory && linkedGoalId) {
+      await addFunds(linkedGoalId, parseFloat(amount), false)
+    }
+
     setSaving(false)
 
     setAmount('')
     setCategoryId(null)
+    setDebtId(null)
+    setLinkedGoalId(null)
     setDescription('')
     setNote('')
     setDuplicateWarning(false)
@@ -266,7 +304,7 @@ export default function AddTransaction() {
                             <button
                               key={cat.id}
                               type="button"
-                              onClick={() => setCategoryId(cat.id!)}
+                              onClick={() => { setCategoryId(cat.id!); setDebtId(null); setLinkedGoalId(null) }}
                               className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                                 selected
                                   ? 'border-transparent text-white'
@@ -296,6 +334,91 @@ export default function AddTransaction() {
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Debt selector (Debt Payoff or Transportation with car debts) */}
+          {showDebtSelector && activeDebts.length > 0 && (
+            <div>
+              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
+                Apply to Debt
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {activeDebts.map((debt) => {
+                  const selected = debtId === debt.id
+                  return (
+                    <button
+                      key={debt.id}
+                      type="button"
+                      onClick={() => setDebtId(selected ? null : debt.id!)}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors text-left ${
+                        selected
+                          ? 'border-transparent bg-orange-600 text-white'
+                          : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
+                      }`}
+                    >
+                      <Icon
+                        name={debt.icon || 'CreditCard'}
+                        size={16}
+                        className={selected ? '' : 'text-red-400'}
+                      />
+                      <div className="flex flex-col items-start">
+                        <span>{debt.name}</span>
+                        <span className="text-xs opacity-80">
+                          {formatCurrency(debt.balance)} · {debt.interestRate}% APR
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Payment will reduce the selected debt's balance.
+              </p>
+            </div>
+          )}
+
+          {/* Savings goal selector (Savings, Retirement, Stocks, Emergency Fund) */}
+          {isSavingsCategory && linkableGoals.length > 0 && (
+            <div>
+              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-400">
+                Add to Savings Goal
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {linkableGoals.map((goal) => {
+                  const id = goal.id!
+                  const selected = linkedGoalId === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setLinkedGoalId(selected ? null : id)}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors text-left ${
+                        selected
+                          ? 'border-transparent text-white'
+                          : 'border-slate-700 text-slate-300 hover:border-slate-600 hover:text-slate-100'
+                      }`}
+                      style={selected ? { backgroundColor: GROUP_COLORS.savings } : undefined}
+                    >
+                      <Icon
+                        name={goal.icon}
+                        size={16}
+                        className={selected ? '' : 'text-blue-400'}
+                      />
+                      <div className="flex flex-col items-start">
+                        <span>{goal.name}</span>
+                        <span className="text-xs opacity-80">
+                          {SAVINGS_TYPE_LABELS[goal.type]} · {formatCurrency(goal.currentAmount)}
+                          {goal.targetAmount > 0 && ` / ${formatCurrency(goal.targetAmount)}`}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Funds will be added to the selected savings goal.
+              </p>
             </div>
           )}
 

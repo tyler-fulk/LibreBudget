@@ -61,6 +61,9 @@ import {
   Key,
   CloudDownload,
   CloudUpload,
+  ClipboardCheck,
+  Sparkles,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -128,6 +131,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Key,
   CloudDownload,
   CloudUpload,
+  ClipboardCheck,
+  Sparkles,
+  Trash2,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

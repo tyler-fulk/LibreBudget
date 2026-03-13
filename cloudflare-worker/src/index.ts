@@ -27,6 +27,19 @@ const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/sit
 /** Test bypass: when secret is this value, accept any non-empty token (vitest only). */
 const TURNSTILE_TEST_BYPASS_SECRET = 'test-bypass-secret';
 
+/** Returns true when hostname is localhost, 127.0.0.1, or a private-network IP. */
+function isLocalHost(hostname: string): boolean {
+	if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+	// Private IPv4 ranges: 10.x, 172.16-31.x, 192.168.x
+	const parts = hostname.split('.').map(Number);
+	if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
+		if (parts[0] === 10) return true;
+		if (parts[0] === 172 && parts[1]! >= 16 && parts[1]! <= 31) return true;
+		if (parts[0] === 192 && parts[1] === 168) return true;
+	}
+	return false;
+}
+
 async function verifyTurnstile(
 	token: string | null,
 	secret: string,
@@ -35,11 +48,11 @@ async function verifyTurnstile(
 	if (!token || !secret) return false;
 	if (secret === TURNSTILE_TEST_BYPASS_SECRET) {
 		if (token.length === 0) return false;
-		// Only allow bypass for localhost (local dev / tests)
+		// Only allow bypass for local dev / tests
 		if (origin) {
 			try {
 				const url = new URL(origin);
-				if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+				if (isLocalHost(url.hostname)) return true;
 			} catch {
 				/* invalid origin */
 			}
@@ -80,22 +93,22 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 /**
  * Verifies that the X-Write-Token header matches the SHA-256 hash stored in KV
- * under "{id}:wth". If no hash exists yet (pre-migration backup), auto-registers
- * the token — providing forward security from that point on.
+ * under "{id}:wth". If no hash exists (pre-migration backup), the write is
+ * allowed without registering a token — preserving old behavior until the
+ * user explicitly re-inits via POST /backup/init (which requires Turnstile).
  */
 async function verifyWriteToken(
 	kv: KVNamespace,
 	id: string,
 	token: string | null,
 ): Promise<boolean> {
-	if (!token) return false;
-	const incomingHash = await sha256Hex(token);
 	const storedHash = await kv.get(`${id}:wth`);
 	if (!storedHash) {
-		// Migration: first write since upgrade — register the token hash
-		await kv.put(`${id}:wth`, incomingHash);
+		// Pre-migration backup: no write-token registered yet — allow write
 		return true;
 	}
+	if (!token) return false;
+	const incomingHash = await sha256Hex(token);
 	return constantTimeEqual(incomingHash, storedHash);
 }
 
@@ -104,7 +117,7 @@ function isOriginAllowed(origin: string | null, env: Env): boolean {
 	const o = origin.replace(/\/$/, '');
 	try {
 		const url = new URL(o);
-		if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+		if (isLocalHost(url.hostname)) return true;
 		return getAllowedOrigins(env).includes(o);
 	} catch {
 		return false;
@@ -215,10 +228,24 @@ export default {
 				if (typeof writeToken !== 'string' || writeToken.trim() === '') {
 					return jsonResponse({ error: 'Missing or invalid writeToken' }, 400, origin, env);
 				}
-				// Store the hash — never the raw token
+				// If a write-token hash already exists, the caller must prove ownership
+				const trimmedId = bodyId.trim();
+				const existingHash = await env.LIBRE_BACKUPS.get(`${trimmedId}:wth`);
+				if (existingHash) {
+					const incomingHash = await sha256Hex(writeToken);
+					if (!constantTimeEqual(incomingHash, existingHash)) {
+						return jsonResponse(
+							{ error: 'Unauthorized', hint: 'A write token is already registered for this ID.' },
+							403,
+							origin,
+							env,
+						);
+					}
+				}
+				// Register (or re-confirm) the write-token hash
 				const writeTokenHash = await sha256Hex(writeToken);
-				await env.LIBRE_BACKUPS.put(`${bodyId.trim()}:wth`, writeTokenHash);
-				return upsertBackup(env.LIBRE_BACKUPS, bodyId, payload, origin, env);
+				await env.LIBRE_BACKUPS.put(`${trimmedId}:wth`, writeTokenHash);
+				return upsertBackup(env.LIBRE_BACKUPS, trimmedId, payload, origin, env);
 			} catch {
 				return jsonResponse({ error: 'Invalid JSON' }, 400, origin, env);
 			}

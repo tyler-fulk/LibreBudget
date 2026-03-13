@@ -6,38 +6,62 @@ export interface FutureValueParams {
   contributionFrequency: ContributionFrequency
   years: number
   annualRatePercent: number
+  annualRaisePercent?: number // annual increase to contributions (e.g. 2 = 2%)
 }
 
 /**
  * Future value with regular contributions (end-of-period).
- * FV = P(1+i)^n + PMT * ((1+i)^n - 1) / i
- * Edge: i ≈ 0 → FV = P + PMT * n
+ *
+ * When annualRaisePercent > 0, contributions grow each year so we iterate
+ * year-by-year.  When 0 (default), uses the closed-form FV formula.
  */
 export function futureValue(params: FutureValueParams): number {
-  const { initialBalance, contribution, contributionFrequency, years, annualRatePercent } = params
+  const { initialBalance, contribution, contributionFrequency, years, annualRatePercent, annualRaisePercent = 0 } = params
   const r = annualRatePercent / 100
+  const raise = annualRaisePercent / 100
 
-  let i: number
-  let n: number
-  let pmt: number
+  // Fast path: no annual raise → closed-form
+  if (raise === 0) {
+    let i: number
+    let n: number
 
-  if (contributionFrequency === 'monthly') {
-    i = r / 12
-    n = Math.max(0, 12 * years)
-    pmt = contribution
-  } else {
-    i = r
-    n = Math.max(0, years)
-    pmt = contribution
+    if (contributionFrequency === 'monthly') {
+      i = r / 12
+      n = Math.max(0, 12 * years)
+    } else {
+      i = r
+      n = Math.max(0, years)
+    }
+
+    const factor = Math.pow(1 + i, n)
+
+    if (Math.abs(i) < 1e-10) {
+      return initialBalance + contribution * n
+    }
+
+    return initialBalance * factor + contribution * ((factor - 1) / i)
   }
 
-  const factor = Math.pow(1 + i, n)
+  // With annual raise: iterate year-by-year
+  let balance = initialBalance
+  let annualContribution = contributionFrequency === 'monthly' ? contribution * 12 : contribution
+  const monthlyRate = r / 12
 
-  if (Math.abs(i) < 1e-10) {
-    return initialBalance + pmt * n
+  for (let y = 0; y < Math.max(0, years); y++) {
+    if (contributionFrequency === 'monthly') {
+      const monthlyContribution = annualContribution / 12
+      for (let m = 0; m < 12; m++) {
+        balance *= (1 + monthlyRate)
+        balance += monthlyContribution
+      }
+    } else {
+      balance *= (1 + r)
+      balance += annualContribution
+    }
+    annualContribution *= (1 + raise)
   }
 
-  return initialBalance * factor + pmt * ((factor - 1) / i)
+  return balance
 }
 
 /**

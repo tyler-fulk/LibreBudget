@@ -22,7 +22,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-20 md:pb-4">
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-md max-h-[85dvh] flex flex-col rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
         <div className="shrink-0 p-6 pb-4 flex items-center justify-between">

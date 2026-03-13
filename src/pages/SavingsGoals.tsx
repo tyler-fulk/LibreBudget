@@ -87,7 +87,7 @@ export default function SavingsGoals() {
   const [icon, setIcon] = useState('Target')
   const [target, setTarget] = useState('')
   const [currentAmount, setCurrentAmount] = useState('')
-  const [deadline, setDeadline] = useState('')
+  const [deadline, setDeadline] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [affectsBudgetCreate, setAffectsBudgetCreate] = useState(true)
 
   // Add funds state
@@ -96,7 +96,7 @@ export default function SavingsGoals() {
 
   const resetForm = () => {
     setName(''); setIcon('Target'); setTarget('')
-    setCurrentAmount(''); setDeadline(''); setAffectsBudgetCreate(true)
+    setCurrentAmount(''); setDeadline(format(new Date(), 'yyyy-MM-dd')); setAffectsBudgetCreate(true)
   }
 
   const handleAddGoal = async () => {

@@ -20,6 +20,7 @@ import {
 import { Icon, CATEGORY_ICONS } from '../components/ui/Icon'
 import { Onboarding } from '../components/Onboarding'
 import { AccountOnboarding } from '../components/AccountOnboarding'
+import { MonthlyAudit } from '../components/MonthlyAudit'
 
 export default function Settings() {
   const {
@@ -43,6 +44,11 @@ export default function Settings() {
   const [importStatus, setImportStatus] = useState('')
   const [showAppTour, setShowAppTour] = useState(false)
   const [showAccountTour, setShowAccountTour] = useState(false)
+  const [showAuditTest, setShowAuditTest] = useState(false)
+  const [showDevPasswordModal, setShowDevPasswordModal] = useState(false)
+  const [devPassword, setDevPassword] = useState('')
+  const [devPasswordError, setDevPasswordError] = useState('')
+  const developerSettingsEnabled = getSetting('developerSettingsEnabled') === 'true'
   const [csvStatus, setCsvStatus] = useState('')
   const [permissionState, setPermissionState] = useState(
     getNotificationPermission(),
@@ -621,6 +627,28 @@ export default function Settings() {
         </div>
       </Card>
 
+      {developerSettingsEnabled && (
+        <Card>
+          <h3 className="mb-3 text-sm font-medium text-slate-400">Developer / Testing</h3>
+          <button
+            onClick={() => setShowAuditTest(true)}
+            className="flex items-center gap-3 rounded-xl bg-slate-800 px-4 py-3 text-left transition-colors hover:bg-slate-700 active:bg-slate-700 w-full"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-600/15">
+              <Icon name="ClipboardCheck" size={15} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-200">Test Monthly Review</p>
+              <p className="text-xs text-slate-500">Force-open the monthly review</p>
+            </div>
+          </button>
+        </Card>
+      )}
+
+      {showAuditTest && (
+        <MonthlyAudit forceOpen onForceClose={() => setShowAuditTest(false)} />
+      )}
+
       {/* About */}
       <Card>
         <h3 className="mb-3 text-sm font-medium text-slate-400">About</h3>
@@ -630,6 +658,30 @@ export default function Settings() {
         <p className="mt-1 mb-4 text-xs text-slate-500">
           Free, open-source budget tracker.
         </p>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-200">Developer settings</p>
+            <p className="text-xs text-slate-500">Show testing and debug tools</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={developerSettingsEnabled}
+            aria-label="Enable developer settings"
+            onClick={() => {
+              if (developerSettingsEnabled) {
+                setSetting('developerSettingsEnabled', 'false')
+              } else {
+                setDevPassword('')
+                setDevPasswordError('')
+                setShowDevPasswordModal(true)
+              }
+            }}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${developerSettingsEnabled ? 'bg-green-600' : 'bg-slate-700'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${developerSettingsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
         <div className="flex flex-col gap-2">
           <button
             onClick={() => setShowAppTour(true)}
@@ -660,6 +712,67 @@ export default function Settings() {
 
       <Onboarding open={showAppTour} onClose={() => setShowAppTour(false)} />
       <AccountOnboarding open={showAccountTour} onClose={() => setShowAccountTour(false)} />
+
+      <Modal
+        open={showDevPasswordModal}
+        onClose={() => {
+          setShowDevPasswordModal(false)
+          setDevPassword('')
+          setDevPasswordError('')
+        }}
+        title="Enable Developer Settings"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Enter the password to enable developer and testing tools.
+          </p>
+          <div>
+            <label className="mb-1 block text-sm text-slate-400">Password</label>
+            <input
+              type="password"
+              value={devPassword}
+              onChange={(e) => {
+                setDevPassword(e.target.value)
+                setDevPasswordError('')
+              }}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  if (devPassword === 'eggs') {
+                    await setSetting('developerSettingsEnabled', 'true')
+                    setShowDevPasswordModal(false)
+                    setDevPassword('')
+                    setDevPasswordError('')
+                  } else {
+                    setDevPasswordError('Incorrect password')
+                  }
+                }
+              }}
+              placeholder="Enter password"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:border-green-500 focus:outline-none"
+              autoFocus
+            />
+            {devPasswordError && (
+              <p className="mt-1 text-xs text-red-400">{devPasswordError}</p>
+            )}
+          </div>
+          <Button
+            onClick={async () => {
+              if (devPassword === 'eggs') {
+                await setSetting('developerSettingsEnabled', 'true')
+                setShowDevPasswordModal(false)
+                setDevPassword('')
+                setDevPasswordError('')
+              } else {
+                setDevPasswordError('Incorrect password')
+              }
+            }}
+            className="w-full"
+            disabled={!devPassword}
+          >
+            Enable
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

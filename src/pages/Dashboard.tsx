@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
 import { Card } from '../components/ui/Card'
+import { InfoTip } from '../components/ui/InfoTip'
 import { HealthBar } from '../components/dashboard/HealthBar'
 import { FinancialHealthScore } from '../components/dashboard/FinancialHealthScore'
 import { RoadmapWidget } from '../components/dashboard/RoadmapWidget'
@@ -192,19 +193,14 @@ export default function Dashboard() {
         <Card>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-slate-400">Month-End Forecast</h3>
-            <div className="relative group/tip">
-              <span className={`text-xs font-medium ${confidenceColors[forecast.confidence]} flex items-center gap-1`}>
-                {forecast.confidence === 'low' ? 'Low' : forecast.confidence === 'medium' ? 'Medium' : 'High'} Confidence
-                <svg className="h-3.5 w-3.5 opacity-60 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-                </svg>
-              </span>
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-lg z-10 opacity-0 pointer-events-none group-hover/tip:opacity-100 group-hover/tip:pointer-events-auto transition-opacity duration-150">
+            <span className={`text-xs font-medium ${confidenceColors[forecast.confidence]} flex items-center gap-1`}>
+              {forecast.confidence === 'low' ? 'Low' : forecast.confidence === 'medium' ? 'Medium' : 'High'} Confidence
+              <InfoTip>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {CONFIDENCE_TIPS[forecast.confidence]}
                 </p>
-              </div>
-            </div>
+              </InfoTip>
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
