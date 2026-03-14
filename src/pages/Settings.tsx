@@ -12,7 +12,8 @@ import { GROUP_COLORS, GROUP_LABELS, getCategoryIconClassName } from '../utils/c
 import { useWallet } from '../hooks/useWallet'
 import { useCloudBackup } from '../hooks/useCloudBackup'
 import { exportTransactionsCSV, downloadCSV, exportTransactionsPDF } from '../utils/csvExport'
-import { parseCSV, importCSVTransactions } from '../utils/csvImport'
+import { parseCSV, importCSVTransactions, detectDuplicates, type ParsedRow } from '../utils/csvImport'
+import { CSVImportModal } from '../components/CSVImportModal'
 import {
   requestNotificationPermission,
   getNotificationPermission,
@@ -50,6 +51,9 @@ export default function Settings() {
   const [devPasswordError, setDevPasswordError] = useState('')
   const developerSettingsEnabled = getSetting('developerSettingsEnabled') === 'true'
   const [csvStatus, setCsvStatus] = useState('')
+  const [showCSVModal, setShowCSVModal] = useState(false)
+  const [csvImportRows, setCsvImportRows] = useState<ParsedRow[]>([])
+  const [csvDuplicates, setCsvDuplicates] = useState<Set<number>>(new Set())
   const [permissionState, setPermissionState] = useState(
     getNotificationPermission(),
   )
@@ -188,14 +192,24 @@ export default function Settings() {
         const text = await file.text()
         const rows = parseCSV(text)
         if (rows.length === 0) { setCsvStatus('No valid rows found'); return }
-        const defaultCat = categories.find((c) => c.group === 'needs') ?? categories[0]
-        if (!defaultCat?.id) { setCsvStatus('No categories available'); return }
-        const count = await importCSVTransactions(rows, defaultCat.id)
-        setCsvStatus(`Imported ${count} transactions!`)
-        setTimeout(() => setCsvStatus(''), 3000)
-      } catch (err) { setCsvStatus(err instanceof Error ? err.message : 'Failed to import CSV') }
+        const dupes = await detectDuplicates(rows)
+        setCsvImportRows(rows)
+        setCsvDuplicates(dupes)
+        setShowCSVModal(true)
+      } catch (err) { setCsvStatus(err instanceof Error ? err.message : 'Failed to parse CSV') }
     }
     input.click()
+  }
+
+  const handleCSVImportConfirm = async (rows: ParsedRow[]) => {
+    try {
+      const defaultCat = categories.find((c) => c.group === 'needs') ?? categories[0]
+      if (!defaultCat?.id) { setCsvStatus('No categories available'); return }
+      const count = await importCSVTransactions(rows, defaultCat.id)
+      setShowCSVModal(false)
+      setCsvStatus(`Imported ${count} transaction${count !== 1 ? 's' : ''}!`)
+      setTimeout(() => setCsvStatus(''), 3000)
+    } catch (err) { setCsvStatus(err instanceof Error ? err.message : 'Failed to import CSV') }
   }
 
   return (
@@ -712,6 +726,16 @@ export default function Settings() {
 
       <Onboarding open={showAppTour} onClose={() => setShowAppTour(false)} />
       <AccountOnboarding open={showAccountTour} onClose={() => setShowAccountTour(false)} />
+
+      <CSVImportModal
+        open={showCSVModal}
+        rows={csvImportRows}
+        duplicateIndices={csvDuplicates}
+        categories={categories}
+        defaultCategoryId={categories.find((c) => c.group === 'needs')?.id ?? categories[0]?.id ?? 0}
+        onConfirm={handleCSVImportConfirm}
+        onClose={() => setShowCSVModal(false)}
+      />
 
       <Modal
         open={showDevPasswordModal}

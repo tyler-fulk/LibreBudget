@@ -14,6 +14,8 @@ import { GROUP_LABELS, GROUP_COLORS, getCategoryIconClassName } from '../utils/c
 import { formatCurrency } from '../utils/calculations'
 import { BudgetToggle } from '../components/BudgetToggle'
 import type { SavingsGoal } from '../db/database'
+import { parseCSV, importCSVTransactions, detectDuplicates, type ParsedRow } from '../utils/csvImport'
+import { CSVImportModal } from '../components/CSVImportModal'
 
 type TabType = 'expense' | 'income' | 'savings'
 
@@ -42,6 +44,10 @@ export default function AddTransaction() {
   const [linkedGoalId, setLinkedGoalId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState(false)
+  const [showCSVModal, setShowCSVModal] = useState(false)
+  const [csvImportRows, setCsvImportRows] = useState<ParsedRow[]>([])
+  const [csvDuplicates, setCsvDuplicates] = useState<Set<number>>(new Set())
+  const [csvStatus, setCsvStatus] = useState('')
 
   const selectedCategory = categoryId ? categories.find((c) => c.id === categoryId) : null
   const catName = selectedCategory?.name ?? ''
@@ -160,11 +166,44 @@ export default function AddTransaction() {
     navigate('/transactions')
   }
 
+  const handleCSVImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.csv'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      try {
+        const text = await file.text()
+        const rows = parseCSV(text)
+        if (rows.length === 0) { setCsvStatus('No valid rows found'); return }
+        const dupes = await detectDuplicates(rows)
+        setCsvImportRows(rows)
+        setCsvDuplicates(dupes)
+        setShowCSVModal(true)
+      } catch (err) { setCsvStatus(err instanceof Error ? err.message : 'Failed to parse CSV') }
+    }
+    input.click()
+  }
+
+  const handleCSVImportConfirm = async (rows: ParsedRow[]) => {
+    const defaultCat = categories.find((c) => c.group === 'needs') ?? categories[0]
+    if (!defaultCat?.id) { setCsvStatus('No categories available'); return }
+    const count = await importCSVTransactions(rows, defaultCat.id)
+    setShowCSVModal(false)
+    setCsvStatus(`Imported ${count} transaction${count !== 1 ? 's' : ''}!`)
+    setTimeout(() => setCsvStatus(''), 3000)
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Add Transaction</h1>
+        <Button variant="secondary" size="sm" onClick={handleCSVImport}>
+          Import CSV
+        </Button>
       </div>
+      {csvStatus && <p className="text-xs text-green-400">{csvStatus}</p>}
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -495,6 +534,16 @@ export default function AddTransaction() {
           </Button>
         </form>
       </Card>
+
+      <CSVImportModal
+        open={showCSVModal}
+        rows={csvImportRows}
+        duplicateIndices={csvDuplicates}
+        categories={categories}
+        defaultCategoryId={categories.find((c) => c.group === 'needs')?.id ?? categories[0]?.id ?? 0}
+        onConfirm={handleCSVImportConfirm}
+        onClose={() => setShowCSVModal(false)}
+      />
 
       {/* New Category Modal */}
       <Modal
