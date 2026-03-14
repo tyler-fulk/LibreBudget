@@ -64,6 +64,8 @@ import {
   ClipboardCheck,
   Sparkles,
   Trash2,
+  Timer,
+  Clock,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -134,6 +136,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ClipboardCheck,
   Sparkles,
   Trash2,
+  Timer,
+  Clock,
 }
 
 /** Legacy emoji -> Lucide icon name for backward compatibility */

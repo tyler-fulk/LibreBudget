@@ -1,5 +1,5 @@
 import { db } from './database'
-import type { Category, CategoryGroup, CreditScoreEntry, Debt, RecurrenceInterval, SavingsGoal, SavingsGoalType, TransactionType } from './database'
+import type { Category, CategoryGroup, CooldownDuration, CreditScoreEntry, Debt, ImpulseInterrogationAnswers, ImpulseItem, ImpulseStatus, RecurrenceInterval, SavingsGoal, SavingsGoalType, TransactionType } from './database'
 import { sanitizeAmount, sanitizeString } from '../utils/sanitize'
 
 const VALID_GROUPS: CategoryGroup[] = ['needs', 'wants', 'savings', 'income']
@@ -14,6 +14,7 @@ export interface BackupPayload {
   savingsGoals?: unknown[]
   debts?: unknown[]
   creditScores?: unknown[]
+  impulseItems?: unknown[]
   version: number
   backedUpAt: string
 }
@@ -42,6 +43,7 @@ export async function serializeDatabase(): Promise<BackupPayload> {
     savingsGoals: await db.savingsGoals.toArray(),
     debts: await db.debts.toArray(),
     creditScores: await db.creditScores.toArray(),
+    impulseItems: await db.impulseItems.toArray(),
     version: 3,
     backedUpAt: new Date().toISOString(),
   }
@@ -73,7 +75,7 @@ export function validateBackupPayload(data: unknown): { valid: boolean; reason?:
     }
   }
 
-  const optionalArrays = ['recurringTransactions', 'savingsGoals', 'debts', 'creditScores']
+  const optionalArrays = ['recurringTransactions', 'savingsGoals', 'debts', 'creditScores', 'impulseItems']
   for (const key of optionalArrays) {
     if (p[key] !== undefined && !Array.isArray(p[key])) {
       return { valid: false, reason: `Table "${key}" must be an array` }
@@ -95,7 +97,7 @@ export async function hydrateDatabase(data: BackupPayload): Promise<void> {
   await db.transaction(
     'rw',
     [db.categories, db.transactions, db.budgetGoals, db.settings,
-     db.recurringTransactions, db.savingsGoals, db.debts, db.creditScores],
+     db.recurringTransactions, db.savingsGoals, db.debts, db.creditScores, db.impulseItems],
     async () => {
       await db.categories.clear()
       await db.transactions.clear()
@@ -105,6 +107,7 @@ export async function hydrateDatabase(data: BackupPayload): Promise<void> {
       await db.savingsGoals.clear()
       await db.debts.clear()
       await db.creditScores.clear()
+      await db.impulseItems.clear()
 
       const categoryIdMap = new Map<number, number>() // oldId -> newId
       if (data.categories?.length) {
@@ -262,6 +265,40 @@ export async function hydrateDatabase(data: BackupPayload): Promise<void> {
           }
         })
         await db.creditScores.bulkAdd(sanitized)
+      }
+      if (data.impulseItems?.length) {
+        const validStatuses: ImpulseStatus[] = ['waiting', 'bought', 'saved', 'archived']
+        const validDurations: CooldownDuration[] = ['instant', '72h', '7d', '14d', '30d']
+        const sanitized = (data.impulseItems as Record<string, unknown>[]).map((i): Omit<ImpulseItem, 'id'> => {
+          const { id: _id, ...rest } = i
+          const status = validStatuses.includes(rest.status as ImpulseStatus) ? (rest.status as ImpulseStatus) : 'waiting'
+          const cooldownDuration = validDurations.includes(rest.cooldownDuration as CooldownDuration) ? (rest.cooldownDuration as CooldownDuration) : '72h'
+          const createdAt = typeof rest.createdAt === 'string' ? rest.createdAt : new Date().toISOString()
+          const cooldownEndsAt = typeof rest.cooldownEndsAt === 'string' ? rest.cooldownEndsAt : new Date().toISOString()
+          const oldCategoryId = Number(rest.categoryId) || 1
+          return {
+            description: sanitizeString(String(rest.description ?? ''), 200),
+            amount: sanitizeAmount(Number(rest.amount) || 0),
+            categoryId: remapCategoryId(oldCategoryId),
+            cooldownDuration,
+            createdAt,
+            cooldownEndsAt,
+            status,
+            resolvedAt: typeof rest.resolvedAt === 'string' ? rest.resolvedAt : undefined,
+            previousStatus: rest.previousStatus === 'saved' || rest.previousStatus === 'bought' ? rest.previousStatus : undefined,
+            lateNightAdded: rest.lateNightAdded === true ? true : undefined,
+            interrogationAnswers: (() => {
+              const a = rest.interrogationAnswers as Record<string, unknown> | undefined
+              if (!a) return undefined
+              const isReplacement = a.isReplacement === 'replacement' || a.isReplacement === 'new' ? a.isReplacement : undefined
+              const canBorrow = a.canBorrow === 'yes' || a.canBorrow === 'no' || a.canBorrow === 'maybe' ? a.canBorrow : undefined
+              const storageLocation = typeof a.storageLocation === 'string' ? sanitizeString(a.storageLocation, 300) : undefined
+              if (!isReplacement || !canBorrow || storageLocation === undefined) return undefined
+              return { isReplacement, canBorrow, storageLocation } satisfies ImpulseInterrogationAnswers
+            })(),
+          }
+        })
+        await db.impulseItems.bulkAdd(sanitized)
       }
     },
   )

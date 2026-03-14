@@ -25,6 +25,7 @@ import CreditScore from './pages/CreditScore'
 import FinancialOrder from './pages/FinancialOrder'
 import Calculator from './pages/Calculator'
 import Resources from './pages/Resources'
+import ImpulseTracker from './pages/ImpulseTracker'
 
 export default function App() {
   useNotifications()
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/recurring" element={<Recurring />} />
           <Route path="/savings" element={<SavingsGoals />} />
           <Route path="/debts" element={<DebtTracker />} />
+          <Route path="/impulse" element={<ImpulseTracker />} />
           <Route path="/trends" element={<Trends />} />
           <Route path="/review" element={<Review />} />
           <Route path="/year-review" element={<YearReview />} />

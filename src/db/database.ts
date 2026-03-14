@@ -109,6 +109,32 @@ export interface CreditScoreEntry {
   createdAt: string
 }
 
+export type CooldownDuration = 'instant' | '72h' | '7d' | '14d' | '30d'
+export type ImpulseStatus = 'waiting' | 'bought' | 'saved' | 'archived'
+
+export interface ImpulseInterrogationAnswers {
+  isReplacement: 'replacement' | 'new'
+  canBorrow: 'yes' | 'no' | 'maybe'
+  storageLocation: string
+}
+
+export interface ImpulseItem {
+  id?: number
+  description: string
+  amount: number
+  categoryId: number
+  cooldownDuration: CooldownDuration
+  createdAt: string
+  cooldownEndsAt: string
+  status: ImpulseStatus
+  resolvedAt?: string
+  /** Status before archiving, so unarchive can restore it. */
+  previousStatus?: 'bought' | 'saved'
+  interrogationAnswers?: ImpulseInterrogationAnswers
+  /** Whether 24h late-night friction was automatically added. */
+  lateNightAdded?: boolean
+}
+
 export class LibreBudgetDB extends Dexie {
   categories!: EntityTable<Category, 'id'>
   transactions!: EntityTable<Transaction, 'id'>
@@ -119,6 +145,7 @@ export class LibreBudgetDB extends Dexie {
   savingsGoals!: EntityTable<SavingsGoal, 'id'>
   debts!: EntityTable<Debt, 'id'>
   creditScores!: EntityTable<CreditScoreEntry, 'id'>
+  impulseItems!: EntityTable<ImpulseItem, 'id'>
 
   constructor() {
     super('LibreBudgetDB')
@@ -179,6 +206,11 @@ export class LibreBudgetDB extends Dexie {
           }
         }
       })
+    })
+
+    // v6: impulse buy cooldown tracker
+    this.version(6).stores({
+      impulseItems: '++id, status, cooldownEndsAt',
     })
   }
 }
