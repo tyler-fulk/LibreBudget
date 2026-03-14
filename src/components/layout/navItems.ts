@@ -22,8 +22,9 @@ export const navGroups: NavGroup[] = [
     items: [
       { path: '/goals', icon: 'DollarSign', label: 'Budget' },
       { path: '/transactions', icon: 'List', label: 'Transactions' },
-      { path: '/recurring', icon: 'Repeat', label: 'Recurring' },
       { path: '/debts', icon: 'TrendingDown', label: 'Debts' },
+      { path: '/recurring', icon: 'Repeat', label: 'Recurring' },
+      { path: '/impulse', icon: 'Timer', label: 'Impulse Control' },
     ],
   },
   {
