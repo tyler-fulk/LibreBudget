@@ -348,7 +348,46 @@ export function parseCSV(text: string): ParsedRow[] {
     })
   }
 
+  applySalaryHeuristic(rows)
   return rows
+}
+
+/**
+ * Post-processing pass: detects likely payroll/salary income.
+ * Conditions (must be income + amount >= $200):
+ *   - Description contains ACH, wire transfer, or direct deposit keywords
+ *   - OR the same rounded amount appears 2+ times in the income rows
+ * Both conditions together → high confidence; either alone → low confidence.
+ * Skips rows already matched at high confidence by a named-merchant rule.
+ */
+function applySalaryHeuristic(rows: ParsedRow[]): void {
+  const ACH_PATTERN =
+    /\b(ach(\s*(credit|debit|transfer))?|wire(\s*(transfer|credit))?|direct\s*dep(osit)?|\bdd\b|payroll\s*(dep(osit)?)?)\b/i
+  const MIN_AMOUNT = 200
+
+  // Count occurrences of each rounded income amount
+  const incomeAmountFreq = new Map<number, number>()
+  for (const row of rows) {
+    if (row.type === 'income' && row.amount >= MIN_AMOUNT) {
+      const key = Math.round(row.amount)
+      incomeAmountFreq.set(key, (incomeAmountFreq.get(key) ?? 0) + 1)
+    }
+  }
+
+  for (const row of rows) {
+    if (row.type !== 'income' || row.amount < MIN_AMOUNT) continue
+    if (row.categoryConfidence === 'high') continue // already identified
+
+    const hasACH = ACH_PATTERN.test(row.description)
+    const isRepeated = (incomeAmountFreq.get(Math.round(row.amount)) ?? 0) >= 2
+
+    if (hasACH || isRepeated) {
+      row.categoryName = 'Salary'
+      row.categoryGroup = 'income'
+      // High confidence only when both signals agree
+      row.categoryConfidence = hasACH && isRepeated ? 'high' : 'low'
+    }
+  }
 }
 
 /** Returns the indices of rows that appear to be duplicates of existing transactions
