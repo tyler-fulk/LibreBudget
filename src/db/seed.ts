@@ -23,6 +23,7 @@ const PRESET_CATEGORIES: Omit<Category, 'id'>[] = [
   // Expenses that happen to build future value (still money out the door)
   { name: 'Education', group: 'needs', color: '#eab308', icon: 'GraduationCap', isPreset: true },
   { name: 'Debt Payoff', group: 'needs', color: '#eab308', icon: 'CreditCard', isPreset: true },
+  { name: 'Fees', group: 'needs', color: '#eab308', icon: 'Receipt', isPreset: true },
   // Income (green)
   { name: 'Salary', group: 'income', color: '#22c55e', icon: 'Banknote', isPreset: true },
   { name: 'Freelance', group: 'income', color: '#22c55e', icon: 'Laptop', isPreset: true },
@@ -42,6 +43,12 @@ export async function seedDatabase() {
     if (hasIncome === 0) {
       const incomeCategories = PRESET_CATEGORIES.filter((c) => c.group === 'income')
       await db.categories.bulkAdd(incomeCategories)
+    }
+
+    // Add Fees category for existing users who don't have it yet
+    const hasFees = await db.categories.where('name').equals('Fees').count()
+    if (hasFees === 0) {
+      await db.categories.add({ name: 'Fees', group: 'needs', color: '#eab308', icon: 'Receipt', isPreset: true })
     }
   }
 

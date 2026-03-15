@@ -136,10 +136,28 @@ const RULES: Rule[] = [
     pattern: /\b(tuition\s*(payment)?|college\s*(fee|tuition|bookstore)?|university\s*(fee|bookstore)?|school\s*(fee|supply|supplies)?|student\s*loan\s*(payment)?|textbook\s*(purchase)?|campus\s*(store|bookstore)?|academic\s*(fee|supply))\b/i,
   },
 
+  // ─── FEES & BANK CHARGES ─────────────────────────────────────────────────────
+  {
+    categoryName: 'Fees', categoryGroup: 'needs', confidence: 'high',
+    // Overdraft and courtesy pay are unambiguously fees
+    pattern: /\b(overdraft(\s*(fee|charge|protection|item))?|courtesy\s*pay(ment)?|nsf(\s*fee)?|non[- ]?sufficient\s*funds?|returned\s*(item|check|payment)\s*(fee)?)\b/i,
+  },
+  {
+    categoryName: 'Fees', categoryGroup: 'needs', confidence: 'low',
+    // Bank/card fees: interest charges (expense side), service charges, ATM fees, etc.
+    pattern: /\b(interest\s*(charge|fee)|finance\s*charge|annual\s*fee|late\s*(fee|charge|payment\s*fee)|atm\s*(fee|surcharge|charge)|foreign\s*(transaction|currency)\s*(fee|charge)|wire(\s*transfer)?\s*fee|service\s*(fee|charge)|monthly\s*(fee|service\s*fee)|account\s*(fee|maintenance\s*fee)|bank\s*(fee|charge)|transaction\s*fee|processing\s*fee|convenience\s*fee|origination\s*fee|penalty\s*(fee|charge)|returned\s*check\s*fee|stop\s*payment\s*fee|paper\s*statement\s*fee|inactivity\s*fee|minimum\s*balance\s*fee)\b/i,
+  },
+
   // ─── DEBT PAYOFF ─────────────────────────────────────────────────────────────
   {
+    categoryName: 'Debt Payoff', categoryGroup: 'needs', confidence: 'high',
+    // PMT and PYMT are bank-specific abbreviations almost exclusively used for
+    // loan and credit-card payments (e.g. "CAPITAL ONE PMT", "DISCOVER PYMT").
+    pattern: /\b(pmt|pymt)\b/i,
+  },
+  {
     categoryName: 'Debt Payoff', categoryGroup: 'needs', confidence: 'low',
-    pattern: /\b(loan\s*payment|student\s*loan\s*(pay|payment)|credit\s*card\s*(payment|pay)|card\s*payment\b|auto\s*loan\s*(pay|payment)|car\s*(loan\s*)?(pay|payment)|personal\s*loan\s*(pay|payment)|debt\s*payment|minimum\s*payment|balance\s*transfer)\b/i,
+    pattern: /\b(loan\s*payment|student\s*loan\s*(pay|payment)|credit\s*card\s*(payment|pay)|card\s*payment\b|auto\s*loan\s*(pay|payment)|car\s*(loan\s*)?(pay|payment)|personal\s*loan\s*(pay|payment)|debt\s*payment|minimum\s*payment|balance\s*transfer|card\s*pmt|loan\s*pmt|auto\s*pmt|cc\s*pay(ment)?|visa\s*pay(ment)?|mastercard\s*pay(ment)?|discover\s*pay(ment)?|amex\s*pay(ment)?|\w+\s*card\s*(pmt|pymt|pay))\b/i,
   },
 
   // ─── SAVINGS ─────────────────────────────────────────────────────────────────
